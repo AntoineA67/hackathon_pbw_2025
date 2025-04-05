@@ -63,10 +63,14 @@ export function Chat({
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
+  const [isActive, setIsActive] = useState(false)
 
   return (
     <>
-      <div className="flex flex-col min-w-0 h-dvh bg-background">
+      <div
+        className={`
+          flex flex-col min-w-0 h-dvh transition-all duration-500 ease-in-out bg-gradient-to-br from-blue-950 via-slate-900 to-blue-900`}
+      >
         {/* <ChatHeader
           chatId={id}
           selectedModelId={selectedChatModel}
@@ -83,6 +87,8 @@ export function Chat({
           reload={reload}
           isReadonly={isReadonly}
           isArtifactVisible={isArtifactVisible}
+          isActive={isActive}
+          setIsActive={setIsActive}
         />
 
         <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
