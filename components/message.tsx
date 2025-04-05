@@ -19,6 +19,7 @@ import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
 import { UseChatHelpers } from '@ai-sdk/react';
+import { SiXrp } from "react-icons/si"
 
 const PurePreviewMessage = ({
   chatId,
@@ -58,14 +59,14 @@ const PurePreviewMessage = ({
           )}
         >
           {message.role === 'assistant' && (
-            <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
+            <div className="size-8 flex items-center rounded-full justify-center shrink-0 bg-background">
               <div className="translate-y-px">
-                <SparklesIcon size={14} />
+                <SiXrp size={24}/>
               </div>
             </div>
           )}
 
-          <div className="flex flex-col gap-4 w-full">
+          <div className="flex flex-col gap-4 w-full justify-center">
             {message.experimental_attachments && (
               <div
                 data-testid={`message-attachments`}
@@ -214,7 +215,7 @@ const PurePreviewMessage = ({
               }
             })}
 
-            {!isReadonly && (
+            {/* {!isReadonly && (
               <MessageActions
                 key={`action-${message.id}`}
                 chatId={chatId}
@@ -222,7 +223,7 @@ const PurePreviewMessage = ({
                 vote={vote}
                 isLoading={isLoading}
               />
-            )}
+            )} */}
           </div>
         </div>
       </motion.div>
@@ -262,7 +263,7 @@ export const ThinkingMessage = () => {
         )}
       >
         <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border">
-          <SparklesIcon size={14} />
+          <SiXrp size={14}/>
         </div>
 
         <div className="flex flex-col gap-2 w-full">

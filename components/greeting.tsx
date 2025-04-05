@@ -5,209 +5,230 @@ import { useState, useEffect, useRef } from "react"
 import { SiXrp } from "react-icons/si"
 import { FaMicrophone } from "react-icons/fa"
 
-function AIBall() {
-  const [isActive, setIsActive] = useState(false);
-  const [size, setSize] = useState(192); // Default size
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>(0);
+interface AIBallProps {
+  size?: number
+  idleColor?: string
+  activeColor?: string
+  onToggle?: (isActive: boolean) => void
+}
+
+function AIBall({ 
+  size = 160, 
+  onToggle
+}: AIBallProps) {
+  const [isActive, setIsActive] = useState(false)
+  const [currentSize, setCurrentSize] = useState(size)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const animationRef = useRef<number>(0)
+  const [rotation, setRotation] = useState(0)
+  const [scale, setScale] = useState(1)
 
   const toggleActive = () => {
-    setIsActive(!isActive);
-    // Toggle size as well to animate resizing
-    // setSize(isActive ? 256 : 320);
-  };
-
-  // Canvas animation
+    const newState = !isActive
+    setIsActive(newState)
+    setCurrentSize(newState ? size * 1.05 : size)
+    if (onToggle) onToggle(newState)
+  }
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    let frameId: number
+    
+    const animateLogo = () => {
+      setRotation(prev => (prev + 0.1) % 360)
+      setScale(1 + Math.sin(Date.now() * 0.002) * 0.05)
+      frameId = requestAnimationFrame(animateLogo)
+    }
+    
+    animateLogo()
+    
+    return () => {
+      cancelAnimationFrame(frameId)
+    }
+  }, [])
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
 
-    // Set canvas dimensions with device pixel ratio for sharpness
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
 
-    // Center of the canvas
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
+    const dpr = window.devicePixelRatio || 1
+    const rect = canvas.getBoundingClientRect()
+    canvas.width = rect.width * dpr
+    canvas.height = rect.height * dpr
+    ctx.scale(dpr, dpr)
 
-    // Base radius of the ball
-    const radius = Math.min(centerX, centerY) * 0.8;
+    const centerX = rect.width / 2
+    const centerY = rect.height / 2
 
-    // Animation variables
-    let hue = 210; // Slightly blueish hue
-    let time = 0;
-    let particleTime = 0;
-    const particles: Particle[] = [];
-
-    // Particle class for the orbiting particles
-    class Particle {
-      x: number;
-      y: number;
-      size: number;
-      speed: number;
-      angle: number;
-      distance: number;
-      hue: number;
-      alpha: number;
-
-      constructor() {
-        this.angle = Math.random() * Math.PI * 2;
-        this.distance = radius * (0.6 + Math.random() * 0.3);
-        this.x = centerX + Math.cos(this.angle) * this.distance;
-        this.y = centerY + Math.sin(this.angle) * this.distance;
-        this.size = 1 + Math.random() * 3;
-        this.speed = 0.01 + Math.random() * 0.02;
-        this.hue = hue + Math.random() * 30 - 15;
-        this.alpha = 0.1 + Math.random() * 0.4;
+    const radius = Math.min(centerX, centerY) * 0.8
+    let time = 0
+    
+    class Wave {
+      points: { x: number; y: number }[]
+      color: string
+      amplitude: number
+      frequency: number
+      speed: number
+      phase: number
+      width: number
+      
+      constructor(color: string, amplitude: number, frequency: number, speed: number, width: number) {
+        this.points = []
+        this.color = color
+        this.amplitude = amplitude
+        this.frequency = frequency
+        this.speed = speed
+        this.phase = Math.random() * Math.PI * 2
+        this.width = width
+        
+        for (let i = 0; i <= 100; i++) {
+          const t = i / 100
+          const angle = t * Math.PI * 2
+          const x = centerX + Math.cos(angle) * radius * 0.7
+          const y = centerY + Math.sin(angle) * radius * 0.7
+          this.points.push({ x, y })
+        }
       }
-
-      update() {
-        this.angle += this.speed;
-        this.x = centerX + Math.cos(this.angle) * this.distance;
-        this.y = centerY + Math.sin(this.angle) * this.distance;
-
-        // Fade out particles over time
-        this.alpha -= 0.002;
-        if (this.alpha <= 0) this.alpha = 0;
+      
+      update(time: number) {
+        for (let i = 0; i <= 100; i++) {
+          const t = i / 100
+          const angle = t * Math.PI * 2
+          const offset = Math.sin(angle * this.frequency + time * this.speed + this.phase) * this.amplitude
+          const waveRadius = radius * (0.7 + offset * 0.05)
+          
+          this.points[i] = {
+            x: centerX + Math.cos(angle) * waveRadius,
+            y: centerY + Math.sin(angle) * waveRadius
+          }
+        }
       }
-
+      
       draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${this.hue}, 80%, 60%, ${this.alpha})`;
-        ctx.fill();
-      }
-
-      isDead() {
-        return this.alpha <= 0;
+        ctx.beginPath()
+        ctx.moveTo(this.points[0].x, this.points[0].y)
+        
+        for (let i = 1; i <= 100; i++) {
+          const p1 = this.points[i - 1]
+          const p2 = this.points[i % 100]
+          const cpX = (p1.x + p2.x) / 2
+          const cpY = (p1.y + p2.y) / 2
+          ctx.quadraticCurveTo(p1.x, p1.y, cpX, cpY)
+        }
+        
+        ctx.strokeStyle = this.color
+        ctx.lineWidth = this.width
+        ctx.stroke()
       }
     }
 
-    // Animation loop
+    const waves = [
+      new Wave('rgba(219, 166, 255, 0.3)', 1.0, 2, 0.5, 1.5),
+      new Wave('rgba(173, 216, 230, 0.3)', 1.2, 3, 0.3, 1.2),
+      new Wave('rgba(255, 182, 193, 0.3)', 0.8, 4, 0.7, 1.0)
+    ]
+  
     const animate = () => {
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Update time
-      time += 0.01;
-      particleTime += 0.05;
-
-      // Shift hue slowly
-      hue = (hue + 0.1) % 360;
-
-      // Draw main sphere with gradient
-      const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
-
-      // Gradient colors based on state and time
-      const baseHue = isActive ? (hue + 40) % 360 : hue;
-      const pulseIntensity = Math.sin(time * 2) * 0.1 + 0.9;
-      const pulseRadius = radius * pulseIntensity;
-
-      gradient.addColorStop(0, `hsla(${baseHue}, 80%, 70%, 0.9)`);
-      gradient.addColorStop(0.5, `hsla(${baseHue + 20}, 80%, 60%, 0.8)`);
-      gradient.addColorStop(1, `hsla(${baseHue + 40}, 80%, 50%, 0.2)`);
-
-      // Draw the main sphere
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
-      ctx.fillStyle = gradient;
-      ctx.fill();
-
-      // Add inner glow
-      const innerGlow = ctx.createRadialGradient(
-        centerX - radius * 0.3,
-        centerY - radius * 0.3,
-        0,
-        centerX,
-        centerY,
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      time += 0.01
+      const gradient = ctx.createRadialGradient(
+        centerX, 
+        centerY, 
+        0, 
+        centerX, 
+        centerY, 
         radius
-      );
-      innerGlow.addColorStop(0, `hsla(${baseHue}, 100%, 90%, 0.8)`);
-      innerGlow.addColorStop(0.5, `hsla(${baseHue}, 100%, 70%, 0.1)`);
-      innerGlow.addColorStop(1, `hsla(${baseHue}, 100%, 60%, 0)`);
+      )
+      
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)')
+      gradient.addColorStop(0.3, 'rgba(219, 166, 255, 0.5)')
+      gradient.addColorStop(0.7, 'rgba(173, 216, 230, 0.5)')
+      gradient.addColorStop(1, 'rgba(255, 255, 255, 0.2)')
 
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
-      ctx.fillStyle = innerGlow;
-      ctx.fill();
-
-      // Add particles when active
-      if (isActive && Math.random() > 0.7) {
-        particles.push(new Particle());
+      ctx.beginPath()
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+      ctx.fillStyle = gradient
+      ctx.fill()
+      
+      ctx.beginPath()
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'
+      ctx.lineWidth = 1
+      ctx.stroke()
+      
+      const highlightGradient = ctx.createRadialGradient(
+        centerX - radius * 0.3, 
+        centerY - radius * 0.3, 
+        0, 
+        centerX, 
+        centerY, 
+        radius
+      )
+      
+      highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)')
+      highlightGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)')
+      highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)')
+      
+      ctx.beginPath()
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+      ctx.fillStyle = highlightGradient
+      ctx.fill()
+      
+      for (const wave of waves) {
+        wave.update(time)
+        wave.draw()
       }
-
-      // Update and draw particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        particles[i].update();
-        particles[i].draw();
-
-        // Remove dead particles
-        if (particles[i].isDead()) {
-          particles.splice(i, 1);
+      
+      if (isActive) {
+        const pulseSize = radius * (1.05 + Math.sin(time * 3) * 0.02)
+        ctx.beginPath()
+        ctx.arc(centerX, centerY, pulseSize, 0, Math.PI * 2)
+        ctx.strokeStyle = 'rgba(219, 166, 255, 0.3)'
+        ctx.lineWidth = 2
+        ctx.stroke()
+        
+        for (let i = 0; i < 3; i++) {
+          const ringSize = radius * (1.1 + (time * 0.3 + i * 0.33) % 1)
+          const opacity = 0.3 * (1 - ((time * 0.3 + i * 0.33) % 1))
+          
+          ctx.beginPath()
+          ctx.arc(centerX, centerY, ringSize, 0, Math.PI * 2)
+          ctx.strokeStyle = `rgba(219, 166, 255, ${opacity})`
+          ctx.lineWidth = 1
+          ctx.stroke()
         }
       }
-
-      // Continue animation
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    // Start animation
-    animate();
-
-    // Cleanup
+      animationRef.current = requestAnimationFrame(animate)
+    }
+    animate()
     return () => {
-      cancelAnimationFrame(animationRef.current);
-    };
-  }, [isActive]);
+      cancelAnimationFrame(animationRef.current)
+    }
+  }, [isActive, size])
+
+  const logoSize = currentSize * 0.25
 
   return (
-      <div className="relative items-center justify-center">
-        <button
-          onClick={toggleActive}
-          className="group w-64 h-64 rounded-full focus:outline-none flex items-center justify-center"
-          aria-label="AI Assistant"
-        >
-          <canvas
-            ref={canvasRef}
-            className="w-full h-full cursor-pointer transition-all duration-500 ease-in-out z-[1]"
-            style={{
-              borderRadius: "50%",
-              width: `${size}px`,
-              height: `${size}px`,
-            }}
-          />
-          {isActive ? (
-            <>
-              <span className="transition-all ease-in-out absolute w-[110%] h-[110%] rounded-full bg-gradient-to-br from-blue-750 via-slate-900 to-blue-800 animate-[pulse_1.5s_ease-in-out_infinite]"></span>
-              <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></span>
-              <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_0.4s]"></span>
-              <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_0.8s]"></span>
-              <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_1.2s]"></span>
-              <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_1.6s]"></span>
-              <span className="transition-all ease-in-out absolute inset-0 rounded-full bg-gradient-radial from-blue-300/20 to-transparent"></span>
-            </>
-            ) : (
-            <>
-              <span className="absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-900 to-blue-800 animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite_2s]"></span>
-            </>
-          )}
-
-          <div
-            className={`absolute inset-0 rounded-full transition-all duration-500 pointer-events-none
-            ${isActive
-              ? "opacity-100 animate-pulse"
-              : "opacity-0 group-hover:opacity-50"
-            }`}
-          />
-        </button>
-      </div>
-  );
+    <div className="relative flex items-center justify-center">
+      <button
+        onClick={toggleActive}
+        className="group rounded-full focus:outline-none flex items-center justify-center"
+        aria-label={isActive ? "AI Assistant is active" : "AI Assistant is idle"}
+      >
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full cursor-pointer transition-all duration-500 ease-in-out z-[1]"
+          style={{
+            borderRadius: "50%",
+            width: `${currentSize}px`,
+            height: `${currentSize}px`,
+          }}
+        />
+        <div className="absolute inset-0 rounded-full shadow-lg shadow-black/20 -z-10"></div>
+      </button>
+    </div>
+  )
 }
 
 export const Greeting = ({isActive, setIsActive} : {isActive:any, setIsActive:any}) => {
