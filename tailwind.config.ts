@@ -1,3 +1,4 @@
+import { text } from 'stream/consumers';
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
@@ -22,7 +23,8 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       colors: {
-        background: 'hsl(var(--background))',
+        background: 'bg-gradient-to-b from-blue-900 to-blue-950',
+        text : 'hsl(var(--text))',
         foreground: 'hsl(var(--foreground))',
         card: {
           DEFAULT: 'hsl(var(--card))',
