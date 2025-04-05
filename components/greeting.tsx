@@ -26,7 +26,7 @@ function AIBall({
   const toggleActive = () => {
     const newState = !isActive
     setIsActive(newState)
-    setCurrentSize(newState ? size * 1.05 : size)
+    setCurrentSize(newState ? size * 1.20 : size)
     if (onToggle) onToggle(newState)
   }
   useEffect(() => {
@@ -95,7 +95,7 @@ function AIBall({
         for (let i = 0; i <= 100; i++) {
           const t = i / 100
           const angle = t * Math.PI * 2
-          const offset = Math.sin(angle * this.frequency + time * this.speed + this.phase) * this.amplitude
+          const offset = Math.sin(angle * this.frequency + time * 10 + this.phase) * this.amplitude
           const waveRadius = radius * (0.7 + offset * 0.05)
           
           this.points[i] = {
@@ -126,7 +126,8 @@ function AIBall({
     const waves = [
       new Wave('rgba(219, 166, 255, 0.3)', 1.0, 2, 0.5, 1.5),
       new Wave('rgba(173, 216, 230, 0.3)', 1.2, 3, 0.3, 1.2),
-      new Wave('rgba(255, 182, 193, 0.3)', 0.8, 4, 0.7, 1.0)
+      new Wave('rgba(255, 182, 193, 0.3)', 0.8, 4, 0.7, 3.0),
+      new Wave('rgba(144, 238, 144, 0.3)', 1.5, 5, 0.4, 1.8),
     ]
   
     const animate = () => {
@@ -188,7 +189,7 @@ function AIBall({
         ctx.lineWidth = 2
         ctx.stroke()
         
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 10; i++) {
           const ringSize = radius * (1.1 + (time * 0.3 + i * 0.33) % 1)
           const opacity = 0.3 * (1 - ((time * 0.3 + i * 0.33) % 1))
           
@@ -233,37 +234,19 @@ function AIBall({
 
 export const Greeting = ({
   isActive,
-  setIsActive,
-  append,
-  setInput
 }: {
   isActive: boolean;
-  setIsActive: (active: boolean) => void;
-  append: (message: { role: 'user' | 'assistant'; content: string }, chatRequestOptions?: any) => Promise<string | null | undefined>;
   setInput: (input: string) => void;
 }) => {
-  const [showMicrophone, setShowMicrophone] = useState(false);
-
-  useEffect(() => {
-    const iconInterval = setInterval(() => {
-      setShowMicrophone(true);
-
-      setTimeout(() => {
-        setShowMicrophone(false);
-      }, 1000);
-    }, 3000);
-
-    return () => clearInterval(iconInterval);
-  }, []);
 
   return (
     <div className="max-w-3xl mx-auto md:mt-20 px-8 size-full flex flex-col justify-center items-center">
       {!isActive && (
-        <h1 className="relative text-3xl font-bold text-white">
+        <h1 className="relative text-2xl font-bold text-white mb-2">
           How may I assist you today?
         </h1>
       )}
-      <AIBall append={append} setInput={setInput} />
+      <AIBall />
     </div>
   );
 };

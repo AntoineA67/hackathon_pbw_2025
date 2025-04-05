@@ -92,14 +92,14 @@ export function Chat({
           setIsActive={setIsActive}
         />
 
-        {messages.length === 0 && (
+        {/* {messages.length === 0 && (
           <Greeting
             isActive={isActive}
             setIsActive={setIsActive}
             append={append}
             setInput={setInput}
           />
-        )}
+        )} */}
 
         <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
           {!isReadonly && (
