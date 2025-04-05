@@ -210,7 +210,7 @@ function AIBall({
   const logoSize = currentSize * 0.25
 
   return (
-    <div className="relative flex items-center justify-center">
+    <div className="flex items-center justify-center">
       <button
         onClick={toggleActive}
         className="group rounded-full focus:outline-none flex items-center justify-center"
@@ -231,27 +231,39 @@ function AIBall({
   )
 }
 
-export const Greeting = ({isActive, setIsActive} : {isActive:any, setIsActive:any}) => {
-  const [showMicrophone, setShowMicrophone] = useState(false)
+export const Greeting = ({
+  isActive,
+  setIsActive,
+  append,
+  setInput
+}: {
+  isActive: boolean;
+  setIsActive: (active: boolean) => void;
+  append: (message: { role: 'user' | 'assistant'; content: string }, chatRequestOptions?: any) => Promise<string | null | undefined>;
+  setInput: (input: string) => void;
+}) => {
+  const [showMicrophone, setShowMicrophone] = useState(false);
 
   useEffect(() => {
     const iconInterval = setInterval(() => {
-      setShowMicrophone(true)
+      setShowMicrophone(true);
 
       setTimeout(() => {
-        setShowMicrophone(false)
-      }, 1000)
-    }, 3000)
+        setShowMicrophone(false);
+      }, 1000);
+    }, 3000);
 
-    return () => clearInterval(iconInterval)
-  }, [])
+    return () => clearInterval(iconInterval);
+  }, []);
+
   return (
     <div className="max-w-3xl mx-auto md:mt-20 px-8 size-full flex flex-col justify-center items-center">
-      {!isActive &&
-        <h1 className="relative text-3xl font-bold text-white">How may I assist you today?</h1>
-      }
-      <AIBall />
-      
+      {!isActive && (
+        <h1 className="relative text-3xl font-bold text-white">
+          How may I assist you today?
+        </h1>
+      )}
+      <AIBall append={append} setInput={setInput} />
     </div>
   );
 };
