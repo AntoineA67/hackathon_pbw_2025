@@ -69,9 +69,7 @@ export function Chat({
     <>
       <div
         className={`
-          flex flex-col min-w-0 h-dvh transition-all duration-500 ease-in-out
-          ${!isActive ? "bg-blue-700" : "bg-emerald-600"}
-        `}
+          flex flex-col min-w-0 h-dvh transition-all duration-500 ease-in-out bg-gradient-to-br from-blue-950 via-slate-900 to-blue-900`}
       >
         {/* <ChatHeader
           chatId={id}
