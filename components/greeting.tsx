@@ -5,16 +5,138 @@ import { useState, useEffect, useRef } from "react"
 import { SiXrp } from "react-icons/si"
 import { FaMicrophone } from "react-icons/fa"
 
-function AIBall() {
+function AIBall({ append, setInput }: { 
+  append: (message: { role: 'user' | 'assistant'; content: string }, chatRequestOptions?: any) => Promise<string | null | undefined>;
+  setInput: (input: string) => void;
+}) {
   const [isActive, setIsActive] = useState(false);
   const [size, setSize] = useState(192); // Default size
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const SILENCE_THRESHOLD = -50; // dB
+  const SILENCE_DURATION = 1000; // ms
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      // Set up audio analysis for silence detection
+      audioContextRef.current = new AudioContext();
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      const analyser = audioContextRef.current.createAnalyser();
+      analyserRef.current = analyser;
+      source.connect(analyser);
+      analyser.fftSize = 2048;
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      const checkSilence = () => {
+        if (!analyserRef.current) return;
+
+        analyserRef.current.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+        const db = 20 * Math.log10(average / 255);
+
+        if (db < SILENCE_THRESHOLD) {
+          if (!silenceTimeoutRef.current) {
+            silenceTimeoutRef.current = setTimeout(() => {
+              stopRecording();
+            }, SILENCE_DURATION);
+          }
+        } else {
+          if (silenceTimeoutRef.current) {
+            clearTimeout(silenceTimeoutRef.current);
+            silenceTimeoutRef.current = null;
+          }
+        }
+
+        if (isRecording) {
+          requestAnimationFrame(checkSilence);
+        }
+      };
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        console.log("onstop");
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/m4a' });
+        const formData = new FormData();
+        formData.append('file', audioBlob, 'audio.m4a');
+
+        try {
+          const response = await fetch('/api/audio/transcribe', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (response.ok) {
+            const { text } = await response.json();
+            if (text) {
+              console.log('transcribed text:', text);
+              // Process the transcribed text as a user message
+              await append({
+                role: 'user',
+                content: text
+              });
+              setInput('');
+            }
+          }
+        } catch (error) {
+          console.error('Error processing audio:', error);
+        }
+
+        // Clean up audio context
+        if (audioContextRef.current) {
+          audioContextRef.current.close();
+          audioContextRef.current = null;
+        }
+        analyserRef.current = null;
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      checkSilence();
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+      setIsRecording(false);
+      setIsActive(false);
+      
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+        silenceTimeoutRef.current = null;
+      }
+    }
+  };
 
   const toggleActive = () => {
+    if (!isActive) {
+      startRecording();
+    } else {
+      stopRecording();
+    }
     setIsActive(!isActive);
-    // Toggle size as well to animate resizing
-    // setSize(isActive ? 256 : 320);
   };
 
   // Canvas animation
@@ -78,6 +200,7 @@ function AIBall() {
       }
 
       draw() {
+        if (!ctx) return;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fillStyle = `hsla(${this.hue}, 80%, 60%, ${this.alpha})`;
@@ -210,27 +333,39 @@ function AIBall() {
   );
 }
 
-export const Greeting = ({isActive, setIsActive} : {isActive:any, setIsActive:any}) => {
-  const [showMicrophone, setShowMicrophone] = useState(false)
+export const Greeting = ({
+  isActive,
+  setIsActive,
+  append,
+  setInput
+}: {
+  isActive: boolean;
+  setIsActive: (active: boolean) => void;
+  append: (message: { role: 'user' | 'assistant'; content: string }, chatRequestOptions?: any) => Promise<string | null | undefined>;
+  setInput: (input: string) => void;
+}) => {
+  const [showMicrophone, setShowMicrophone] = useState(false);
 
   useEffect(() => {
     const iconInterval = setInterval(() => {
-      setShowMicrophone(true)
+      setShowMicrophone(true);
 
       setTimeout(() => {
-        setShowMicrophone(false)
-      }, 1000)
-    }, 3000)
+        setShowMicrophone(false);
+      }, 1000);
+    }, 3000);
 
-    return () => clearInterval(iconInterval)
-  }, [])
+    return () => clearInterval(iconInterval);
+  }, []);
+
   return (
     <div className="max-w-3xl mx-auto md:mt-20 px-8 size-full flex flex-col justify-center items-center">
-      {!isActive &&
-        <h1 className="relative text-3xl font-bold text-white">How may I assist you today?</h1>
-      }
-      <AIBall />
-      
+      {!isActive && (
+        <h1 className="relative text-3xl font-bold text-white">
+          How may I assist you today?
+        </h1>
+      )}
+      <AIBall append={append} setInput={setInput} />
     </div>
   );
 };
