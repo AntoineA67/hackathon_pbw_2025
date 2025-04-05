@@ -80,7 +80,7 @@ export const sendXRP = tool({
         seed: walletMap[validatedData.sender].secret,
       }
       console.log('Request:', JSON.stringify(body));
-      const response = await fetch(`https://pbw-hackathon-2025.onrender.com/api/payments`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/payments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
