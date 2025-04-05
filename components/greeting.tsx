@@ -10,28 +10,81 @@ function AIBall({ append, setInput }: {
   setInput: (input: string) => void;
 }) {
   const [isActive, setIsActive] = useState(false);
-  const [size, setSize] = useState(192); // Default size
+  const [size, setSize] = useState(192);
+  const [isRecording, setIsRecording] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const [isRecording, setIsRecording] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const SILENCE_THRESHOLD = -50; // dB
-  const SILENCE_DURATION = 1000; // ms
+  useEffect(() => {
+    // Check if we're in a browser environment
+    if (typeof window !== 'undefined') {
+      const userAgent = window.navigator.userAgent;
+      setIsMobile(/iPhone|iPad|iPod|Android/i.test(userAgent));
+    }
+  }, []);
+
+  const SILENCE_THRESHOLD = isMobile ? -45 : -50;
+  const SILENCE_DURATION = isMobile ? 1500 : 1000;
+
+  const requestMicrophonePermission = async () => {
+    try {
+      // Check if we're in a browser environment and if mediaDevices is available
+      if (typeof window === 'undefined' || !window.navigator.mediaDevices) {
+        throw new Error('Media devices not available');
+      }
+
+      const stream = await window.navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
+      return stream;
+    } catch (err) {
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError') {
+          setError('Microphone access was denied. Please allow microphone access to use voice input.');
+        } else if (err.name === 'NotFoundError') {
+          setError('No microphone found. Please connect a microphone to use voice input.');
+        } else {
+          setError('Error accessing microphone: ' + err.message);
+        }
+      }
+      throw err;
+    }
+  };
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      setError(null);
+      const stream = await requestMicrophonePermission();
+      
+      // Check if AudioContext is available
+      if (typeof window === 'undefined' || !window.AudioContext) {
+        throw new Error('AudioContext not available');
+      }
+
+      // Create audio context after user interaction (required for mobile)
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: isMobile ? 'audio/webm' : 'audio/m4a'
+      });
+      
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
       // Set up audio analysis for silence detection
-      audioContextRef.current = new AudioContext();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       const analyser = audioContextRef.current.createAnalyser();
       analyserRef.current = analyser;
@@ -74,7 +127,15 @@ function AIBall({ append, setInput }: {
 
       mediaRecorder.onstop = async () => {
         console.log("onstop");
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/m4a' });
+        const audioBlob = new Blob(audioChunksRef.current, { 
+          type: isMobile ? 'audio/webm' : 'audio/m4a' 
+        });
+        
+        if (audioBlob.size === 0) {
+          setError('No audio was recorded. Please try again.');
+          return;
+        }
+
         const formData = new FormData();
         formData.append('file', audioBlob, 'audio.m4a');
 
@@ -88,16 +149,20 @@ function AIBall({ append, setInput }: {
             const { text } = await response.json();
             if (text) {
               console.log('transcribed text:', text);
-              // Process the transcribed text as a user message
               await append({
                 role: 'user',
                 content: text
               });
               setInput('');
+            } else {
+              setError('No text was transcribed. Please try again.');
             }
+          } else {
+            setError('Failed to transcribe audio. Please try again.');
           }
         } catch (error) {
           console.error('Error processing audio:', error);
+          setError('Error processing audio. Please try again.');
         }
 
         // Clean up audio context
@@ -108,11 +173,15 @@ function AIBall({ append, setInput }: {
         analyserRef.current = null;
       };
 
-      mediaRecorder.start();
+      // Start recording with a small time slice for better mobile performance
+      mediaRecorder.start(100);
       setIsRecording(true);
       checkSilence();
     } catch (error) {
       console.error('Error accessing microphone:', error);
+      if (error instanceof Error) {
+        setError(error.message);
+      }
     }
   };
 
@@ -290,46 +359,51 @@ function AIBall({ append, setInput }: {
   }, [isActive]);
 
   return (
-      <div className="relative items-center justify-center">
-        <button
-          onClick={toggleActive}
-          className="group w-64 h-64 rounded-full focus:outline-none flex items-center justify-center"
-          aria-label="AI Assistant"
-        >
-          <canvas
-            ref={canvasRef}
-            className="w-full h-full cursor-pointer transition-all duration-500 ease-in-out z-[1]"
-            style={{
-              borderRadius: "50%",
-              width: `${size}px`,
-              height: `${size}px`,
-            }}
-          />
-          {isActive ? (
-            <>
-              <span className="transition-all ease-in-out absolute w-[110%] h-[110%] rounded-full bg-gradient-to-br from-blue-750 via-slate-900 to-blue-800 animate-[pulse_1.5s_ease-in-out_infinite]"></span>
-              <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></span>
-              <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_0.4s]"></span>
-              <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_0.8s]"></span>
-              <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_1.2s]"></span>
-              <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_1.6s]"></span>
-              <span className="transition-all ease-in-out absolute inset-0 rounded-full bg-gradient-radial from-blue-300/20 to-transparent"></span>
-            </>
-            ) : (
-            <>
-              <span className="absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-900 to-blue-800 animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite_2s]"></span>
-            </>
-          )}
+    <div className="relative items-center justify-center">
+      {error && (
+        <div className="absolute bottom-full mb-2 text-red-500 text-sm">
+          {error}
+        </div>
+      )}
+      <button
+        onClick={toggleActive}
+        className="group w-64 h-64 rounded-full focus:outline-none flex items-center justify-center"
+        aria-label="AI Assistant"
+      >
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full cursor-pointer transition-all duration-500 ease-in-out z-[1]"
+          style={{
+            borderRadius: "50%",
+            width: `${size}px`,
+            height: `${size}px`,
+          }}
+        />
+        {isActive ? (
+          <>
+            <span className="transition-all ease-in-out absolute w-[110%] h-[110%] rounded-full bg-gradient-to-br from-blue-750 via-slate-900 to-blue-800 animate-[pulse_1.5s_ease-in-out_infinite]"></span>
+            <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></span>
+            <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_0.4s]"></span>
+            <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_0.8s]"></span>
+            <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_1.2s]"></span>
+            <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_1.6s]"></span>
+            <span className="transition-all ease-in-out absolute inset-0 rounded-full bg-gradient-radial from-blue-300/20 to-transparent"></span>
+          </>
+          ) : (
+          <>
+            <span className="absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-900 to-blue-800 animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite_2s]"></span>
+          </>
+        )}
 
-          <div
-            className={`absolute inset-0 rounded-full transition-all duration-500 pointer-events-none
-            ${isActive
-              ? "opacity-100 animate-pulse"
-              : "opacity-0 group-hover:opacity-50"
-            }`}
-          />
-        </button>
-      </div>
+        <div
+          className={`absolute inset-0 rounded-full transition-all duration-500 pointer-events-none
+          ${isActive
+            ? "opacity-100 animate-pulse"
+            : "opacity-0 group-hover:opacity-50"
+          }`}
+        />
+      </button>
+    </div>
   );
 }
 
