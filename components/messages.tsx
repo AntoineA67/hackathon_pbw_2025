@@ -3,7 +3,7 @@ import { PreviewMessage, ThinkingMessage } from './message';
 import { useScrollToBottom } from './use-scroll-to-bottom';
 import { Greeting } from './greeting';
 import { memo } from 'react';
-import { message, type Vote } from '@/lib/db/schema';
+import { type Vote } from '@/lib/db/schema';
 import equal from 'fast-deep-equal';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import { AssistantMessage } from './AssistantMessage';
@@ -72,12 +72,12 @@ function PureMessages({
             return (
               <div key={message.id} className="space-y-4">
                 {textParts.map((part, partIndex) => (
-                  <AssistantMessage key={`${message.id}-${partIndex}`} message={part.text} setInput={setInput} />
+                  <AssistantMessage setInput={setInput} key={`${message.id}-${partIndex}`} message={part.text} />
                 ))}
                 {toolParts.map((part, partIndex) => {
                   if (part.type === 'tool-invocation' && part.toolInvocation.state === 'result') {
                     return (
-                      <AssistantMessage key={`${message.id}-tool-${partIndex}`} message={JSON.stringify(part.toolInvocation.result)} setInput={setInput} />
+                      <AssistantMessage setInput={setInput} key={`${message.id}-tool-${partIndex}`} message={JSON.stringify(part.toolInvocation.result)} />
                     );
                   }
                   return null;

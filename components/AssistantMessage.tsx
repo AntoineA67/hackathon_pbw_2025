@@ -57,17 +57,17 @@ export function AssistantMessage({ message, setInput }: AssistantMessageProps) {
         return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`
       }
       return (
-        <div className="p-4 ml-2 bg-gradient-to-br from-cyan-800/90 to-blue-900/90 text-white rounded-lg w-[50%] shadow-lg shadow-green/50">
+        <div className="p-4 ml-2 bg-gradient-to-br from-cyan-800/90 to-blue-900/90 text-white rounded-lg w-full sm:w-[80%] md:w-[70%] lg:w-[60%] shadow-lg shadow-green/50">
           <h3 className="text-emerald-500 font-semibold mb-2">Contacts Found:</h3>
 
           {/* Enhanced Contacts Widget */}
           <div className="overflow-hidden rounded-xl border border-cyan-700/30 bg-gradient-to-br from-cyan-900/80 to-blue-950/80">
-            {/* Widget Header */}
-            <div className="bg-gradient-to-r from-cyan-800 to-blue-800 px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            {/* Widget Header - simplified on mobile */}
+            <div className="bg-gradient-to-r from-cyan-800 to-blue-800 px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <div className="bg-cyan-600 rounded-full p-1">
                   <svg
-                    className="h-4 w-4 text-white"
+                    className="h-3 w-3 sm:h-4 sm:w-4 text-white"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -80,31 +80,37 @@ export function AssistantMessage({ message, setInput }: AssistantMessageProps) {
                     />
                   </svg>
                 </div>
-                <h3 className="text-cyan-100 font-semibold text-sm">Select Recipient</h3>
+                <h3 className="text-cyan-100 font-semibold text-xs sm:text-sm">Select Recipient</h3>
               </div>
               <span className="bg-cyan-700/50 text-cyan-100 text-xs px-2 py-0.5 rounded-full">
                 {data.contacts.length} Found
               </span>
             </div>
 
-            {/* Widget Content */}
-            <div className="p-3">
+            {/* Widget Content - improved for small screens */}
+            <div className="p-2 sm:p-3">
               <ul className="space-y-2">
-                {data.contacts.map((contact: { name: string; walletAddress: string }, index: number) => (
+                {data.contacts.map((contact:any, index:number) => (
                   <li
                     key={index}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-blue-800/20 transition-colors"
+                    className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 p-2 rounded-lg hover:bg-blue-800/20 transition-colors"
                   >
-                    {/* Contact Avatar */}
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-600 to-blue-700 flex items-center justify-center text-white text-xs font-medium">
+                    {/* Contact Avatar - smaller on mobile */}
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 shrink-0 rounded-full bg-gradient-to-br from-cyan-600 to-blue-700 flex items-center justify-center text-white text-xs font-medium">
                       {getInitials(contact.name)}
                     </div>
 
-                    {/* Contact Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white">{contact.name}</p>
+                    {/* Contact Info - better wrapping behavior */}
+                    <div className="flex-1 min-w-0 mr-auto">
+                      <p className="font-medium text-white text-sm sm:text-base">{contact.name}</p>
                       <div className="flex items-center gap-1 text-xs text-cyan-300">
-                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg
+                          className="h-3 w-3 shrink-0"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
                           <path
                             d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                             strokeLinecap="round"
@@ -115,8 +121,8 @@ export function AssistantMessage({ message, setInput }: AssistantMessageProps) {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-1">
+                    {/* Action Buttons - always visible */}
+                    <div className="flex gap-1 shrink-0 ml-auto">
                       <button
                         onClick={() => copyToClipboard(contact.walletAddress, index)}
                         className="p-1.5 rounded-full hover:bg-cyan-700/50 transition-colors text-cyan-300 hover:text-white"
@@ -161,7 +167,9 @@ export function AssistantMessage({ message, setInput }: AssistantMessageProps) {
                       <button
                         className="p-1.5 rounded-full hover:bg-cyan-700/50 transition-colors text-cyan-300 hover:text-white"
                         title="Send"
-                        onClick={() => {setInput(`Send the amount to ${contact.walletAddress}`)}}
+                        onClick={() => {
+                          setInput(`Send the amount to ${contact.walletAddress}`)
+                        }}
                       >
                         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path

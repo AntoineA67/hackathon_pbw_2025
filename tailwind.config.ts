@@ -27,7 +27,7 @@ const config: Config = {
           "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         },
         background: 'bg-gradient-to-b from-blue-900 to-blue-950',
-        text : 'hsl(var(--text))',
+        text : 'white',
         foreground: 'hsl(var(--foreground))',
         card: {
           DEFAULT: 'hsl(var(--card))',

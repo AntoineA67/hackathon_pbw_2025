@@ -8,7 +8,6 @@ import { renderToString } from 'react-dom/server';
 import { Markdown } from '@/components/markdown';
 
 import { documentSchema } from './config';
-import { createSuggestionWidget, type UISuggestion } from './suggestions';
 
 export const buildDocumentFromContent = (content: string) => {
   const parser = DOMParser.fromSchema(documentSchema);
@@ -23,7 +22,7 @@ export const buildContentFromDocument = (document: Node) => {
 };
 
 export const createDecorations = (
-  suggestions: Array<UISuggestion>,
+  suggestions: Array<any>,
   view: EditorView,
 ) => {
   const decorations: Array<Decoration> = [];
@@ -39,20 +38,6 @@ export const createDecorations = (
         {
           suggestionId: suggestion.id,
           type: 'highlight',
-        },
-      ),
-    );
-
-    decorations.push(
-      Decoration.widget(
-        suggestion.selectionStart,
-        (view) => {
-          const { dom } = createSuggestionWidget(suggestion, view);
-          return dom;
-        },
-        {
-          suggestionId: suggestion.id,
-          type: 'widget',
         },
       ),
     );

@@ -19,7 +19,7 @@ import {
   getTrailingMessageId,
 } from '@/lib/utils';
 import { generateTitleFromUserMessage } from '../../actions';
-import { sendXRP, sendCheck, addContact, getContacts } from '@/lib/ai/tools';
+import { sendXRP, sendCheck, addContact, getContacts, sendCrossCurrency } from '@/lib/ai/tools';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { initializeAI } from '@/lib/ai/init';
@@ -94,7 +94,8 @@ export async function POST(request: Request) {
                   'sendXRP',
                   'sendCheck',
                   'addContact',
-                  'getContacts',
+                'getContacts',
+                'sendCrossCurrency',
                 ],
           experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_generateMessageId: generateUUID,
@@ -103,6 +104,7 @@ export async function POST(request: Request) {
             addContact,
             sendXRP,
             getContacts,
+            sendCrossCurrency,
           },
           onFinish: async ({ response }) => {
             if (session.user?.id) {
