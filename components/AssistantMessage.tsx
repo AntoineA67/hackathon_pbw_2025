@@ -238,43 +238,50 @@ export function AssistantMessage({ message, setInput, status = 'complete' }: Ass
       const explorerLink = `https://testnet.xrpl.org/transactions/${data.hash}`;
       
       return (
-        <Card className="w-full max-w-2xl border-green-500/20 bg-green-500/5">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-green-500">
-              <div className="size-2 rounded-full bg-green-500" />
-              Transaction Successful
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Transaction ID</span>
-                <span className="font-mono text-sm">{data.hash}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Remaining Balance</span>
-                <span className="font-mono text-sm">{data.balance} XRP</span>
-              </div>
+        <div className="p-4 bg-gradient-to-br from-cyan-800/90 to-blue-900/90 text-white rounded-lg w-full shadow-lg shadow-green-500/30">
+          {/* Card Header */}
+          <div className="bg-gradient-to-r from-cyan-800 to-blue-800 px-4 py-3 rounded-t-lg flex items-center gap-2">
+            <div className="bg-emerald-600 rounded-full p-1">
+              <svg className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="20 6 9 17 4 12" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
-            <Link
-              href={explorerLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-green-500 hover:underline"
-            >
-              View transaction details
-              <ExternalLink className="size-4" />
-            </Link>
-          </CardContent>
-        </Card>
-      );
+            <h3 className="text-emerald-300 font-semibold">Transaction Successful</h3>
+          </div>
+    
+          {/* Card Content */}
+          <div className="p-4 bg-gradient-to-br from-cyan-900/80 to-blue-950/80 rounded-b-lg border border-cyan-700/30">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-cyan-300">Transaction ID</span>
+                  <span className="font-mono text-sm text-white">{data.hash}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-cyan-300">Remaining Balance</span>
+                  <span className="font-mono text-sm text-white">{data.balance} XRP</span>
+                </div>
+              </div>
+    
+              <Link
+                href={explorerLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+              >
+                View transaction details
+                <ExternalLink className="size-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )
     }
   } catch (e) {
     // If parsing as JSON fails, treat it as regular text content
     return (
       <div 
-        className="p-4 ml-2 bg-gradient-to-br from-cyan-800/90 to-blue-900/90 text-white rounded-lg" 
-        style={{ maxWidth: `${Math.min(600, message.length * 10)}px` }}
+        className="p-4 ml-2 bg-gradient-to-br from-cyan-800/90 to-blue-900/90 text-white rounded-lg"
       >
         <Markdown>{message}</Markdown>
       </div>
@@ -282,12 +289,47 @@ export function AssistantMessage({ message, setInput, status = 'complete' }: Ass
   }
 
   // If we get here, it means the message wasn't a valid JSON
+  const data = JSON.parse(message);
+  console.log(data)
   return (
-    <div 
-      className="p-4 ml-2 bg-gradient-to-br from-cyan-800/90 to-blue-900/90 text-white rounded-lg" 
-      style={{ maxWidth: `${Math.min(600, message.length * 10)}px` }}
-    >
-      <p className="text-cyan-200/70">{message}</p>
+    <>
+        <div className="p-4 bg-gradient-to-br from-cyan-800/90 to-blue-900/90 text-white rounded-lg w-full shadow-lg shadow-green-500/30">
+        {/* Card Header */}
+        <div className="bg-gradient-to-r from-cyan-800 to-blue-800 px-4 py-3 rounded-t-lg flex items-center gap-2">
+          <div className="bg-emerald-600 rounded-full p-1">
+            <svg className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="20 6 9 17 4 12" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <h3 className="text-emerald-300 font-semibold">{data.message}</h3>
+        </div>
+
+        {/* Card Content */}
+        <div className="p-4 bg-gradient-to-br from-cyan-900/80 to-blue-950/80 rounded-b-lg border border-cyan-700/30">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-cyan-300">Transaction ID</span>
+                <span className="font-mono text-xs text-white">{data.transactionHash}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-cyan-300">Remaining Balance</span>
+                <span className="font-mono text-xs text-white">{data.balance} XRP</span>
+              </div>
+            </div>
+
+            {/* <Link
+              href={explorerLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+            >
+              View transaction details
+              <ExternalLink className="size-4" />
+            </Link> */}
+          </div>
+        </div>
+      </div>
       <audio 
         ref={audioRef} 
         className="hidden"
@@ -297,6 +339,6 @@ export function AssistantMessage({ message, setInput, status = 'complete' }: Ass
           }
         }}
       />
-    </div>
+    </>
   );
 } 
