@@ -14,7 +14,8 @@ export function TransactionMessage({ content, className }: TransactionMessagePro
     // Try to parse the content as JSON first (for tool results)
     const data = JSON.parse(content);
     if (data.hash && data.balance) {
-      const explorerLink = `https://testnet.xrpl.org/transactions/${data.hash}/detailed`;
+      console.log(data);
+      const explorerLink = `https://testnet.xrpl.org/transactions/${data.hash}`;
       
       return (
         <Card className={cn(
