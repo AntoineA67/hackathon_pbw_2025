@@ -69,7 +69,7 @@ export function Chat({
   return (
     <>
       <motion.div
-        className="flex flex-col justify-center min-h-screen w-full"
+        className="flex flex-col justify-center min-h-screen w-full max-h-[100vh] relative overflow-hidden"
         animate={{
           background: isActive
             ? [
