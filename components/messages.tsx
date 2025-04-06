@@ -72,12 +72,12 @@ function PureMessages({
             return (
               <div key={message.id} className="space-y-4">
                 {textParts.map((part, partIndex) => (
-                  <AssistantMessage key={`${message.id}-${partIndex}`} message={part.text} />
+                  <AssistantMessage key={`${message.id}-${partIndex}`} message={part.text} setInput={setInput} />
                 ))}
                 {toolParts.map((part, partIndex) => {
                   if (part.type === 'tool-invocation' && part.toolInvocation.state === 'result') {
                     return (
-                      <AssistantMessage key={`${message.id}-tool-${partIndex}`} message={JSON.stringify(part.toolInvocation.result)} />
+                      <AssistantMessage key={`${message.id}-tool-${partIndex}`} message={JSON.stringify(part.toolInvocation.result)} setInput={setInput} />
                     );
                   }
                   return null;
