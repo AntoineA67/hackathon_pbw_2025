@@ -14,7 +14,7 @@ const transactionSchema = z.object({
 });
 
 export const sendCheck = tool({
-  description: 'Send a check to one of the available wallets',
+  description: 'Send a check to a wallet address',
   parameters: transactionSchema,
   execute: async ({ amount, recipient, memo, invoiceId }) => {
     try {
@@ -30,18 +30,6 @@ export const sendCheck = tool({
         console.error('Sender wallet not properly configured in environment variables');
         throw new Error('Sender wallet not properly configured in environment variables');
       }
-
-      // Get recipient's wallet address from database
-      // const [recipientContact] = await db
-      //   .select()
-      //   .from(contact)
-      //   .where(eq(contact.firstName, recipient))
-      //   .limit(1);
-
-      // if (!recipientContact?.walletAddress) {
-      //   console.error(`Recipient wallet for "${recipient}" not found in database`);
-      //   throw new Error(`Recipient wallet for "${recipient}" not found in database`);
-      // }
       
       const body = {
         amount: validatedData.amount,

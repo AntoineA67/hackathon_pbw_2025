@@ -19,16 +19,18 @@ import {
   getTrailingMessageId,
 } from '@/lib/utils';
 import { generateTitleFromUserMessage } from '../../actions';
-import { sendXRP } from '@/lib/ai/tools/send-xrp';
-import { sendCheck } from '@/lib/ai/tools/send-checks';
-import { addContact } from '@/lib/ai/tools/add-contact';
+import { sendXRP, sendCheck, addContact, getContacts } from '@/lib/ai/tools';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
+import { initializeAI } from '@/lib/ai/init';
 
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
+    // Initialize AI and contacts
+    await initializeAI();
+
     const {
       id,
       messages,
@@ -92,6 +94,7 @@ export async function POST(request: Request) {
                   'sendXRP',
                   'sendCheck',
                   'addContact',
+                  'getContacts',
                 ],
           experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_generateMessageId: generateUUID,
@@ -99,6 +102,7 @@ export async function POST(request: Request) {
             sendCheck,
             addContact,
             sendXRP,
+            getContacts,
           },
           onFinish: async ({ response }) => {
             if (session.user?.id) {
