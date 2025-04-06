@@ -1,6 +1,6 @@
 // app/api/transaction/preview/route.ts
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { OpenAI } from 'openai';
 
 const walletMap: Record<string, { address?: string; secret?: string }> = {
   Shane: {
