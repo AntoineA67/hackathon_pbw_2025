@@ -65,12 +65,25 @@ function PureMessages({
       >
         {messages.map((message, index) => {
           if (message.role === 'assistant') {
-            const textPart = message.parts.find(part => part.type === 'text');
-            if (textPart && 'text' in textPart) {
-              return (
-                <AssistantMessage key={message.id} message={textPart.text} />
-              );
-            }
+            // Find all parts of the message
+            const textParts = message.parts.filter(part => part.type === 'text');
+            const toolParts = message.parts.filter(part => part.type === 'tool-invocation');
+
+            return (
+              <div key={message.id} className="space-y-4">
+                {textParts.map((part, partIndex) => (
+                  <AssistantMessage key={`${message.id}-${partIndex}`} message={part.text} />
+                ))}
+                {toolParts.map((part, partIndex) => {
+                  if (part.type === 'tool-invocation' && part.toolInvocation.state === 'result') {
+                    return (
+                      <AssistantMessage key={`${message.id}-tool-${partIndex}`} message={JSON.stringify(part.toolInvocation.result)} />
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            );
           }
           return (
             <PreviewMessage
