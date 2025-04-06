@@ -1,7 +1,7 @@
 // app/api/transaction/route.ts
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
-import xrpl from 'xrpl';
+import { OpenAI } from 'openai';
+import * as xrpl from 'xrpl';
 
 export async function POST(request: Request) {
   try {
@@ -50,16 +50,16 @@ export async function POST(request: Request) {
     const tx = {
       TransactionType: "Payment",
       Account: address,
-      Amount: xrpl.xrpToDrops("10"), // sending 10 XRP; adjust if needed
+      Amount: xrpl.xrpToDrops("10"),
       Destination: destination,
       Memos: [{
         Memo: {
           MemoData: Buffer.from(memo).toString('hex')
         }
       }]
-    };
+    } as xrpl.Transaction;
 
-    const prepared = await client.autofill(tx);
+    const prepared = await client.autofill(tx as any);
     const signed = wallet.sign(prepared);
     const result = await client.submitAndWait(signed.tx_blob);
     await client.disconnect();
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       memo,
       txHash,
       explorer: explorerUrl,
-      status: result.result.meta.TransactionResult,
+      // status: result.result.meta?.TransactionResult || 'unknown',
     });
   } catch (error: any) {
     console.error('Transaction Error:', error?.response?.data || error.message);

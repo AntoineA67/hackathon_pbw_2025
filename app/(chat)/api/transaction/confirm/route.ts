@@ -1,90 +1,58 @@
 // app/api/transaction/confirm/route.ts
 import { NextResponse } from 'next/server';
-import xrpl from 'xrpl';
+import * as xrpl from 'xrpl';
 
-export const walletMap: Record<string, { address?: string; secret?: string }> = {
-  Shane: {
-    address: process.env.WALLET_SHANE_ADDRESS,
-    secret: process.env.WALLET_SHANE_SECRET,
+const WALLET_MAP: Record<string, { address?: string; secret?: string }> = {
+  sender: {
+    address: process.env.SENDER_WALLET_ADDRESS,
+    secret: process.env.SENDER_WALLET_SECRET,
   },
-  Luc: {
-    address: process.env.WALLET_LUC_ADDRESS,
-    secret: process.env.WALLET_LUC_SECRET,
-  },
-  Florian: {
-    address: process.env.WALLET_FLORIAN_ADDRESS,
-    secret: process.env.WALLET_FLORIAN_SECRET,
-  },
-  Thomas: {
-    address: process.env.WALLET_THOMAS_ADDRESS,
-    secret: process.env.WALLET_THOMAS_SECRET,
+  recipient: {
+    address: process.env.RECIPIENT_WALLET_ADDRESS,
+    secret: process.env.RECIPIENT_WALLET_SECRET,
   },
 };
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as { amount: number | string; memo: string; recipient: string; sender: string };
-    let { amount, memo, recipient, sender } = body;
+    const { amount, memo } = await request.json();
 
-    // Ensure amount is a valid string representing a number.
-    amount = typeof amount === 'number' || typeof amount === 'string' ? String(amount) : '';
-    if (!amount || isNaN(Number(amount))) {
+    if (!amount || !memo) {
       return NextResponse.json(
-        { error: 'Amount must be a valid number.' },
+        { error: 'Amount and memo are required' },
         { status: 400 }
       );
     }
 
-    // Sanitize memo
-    let cleanMemo: string;
-    if (typeof memo === 'string') {
-      cleanMemo = memo.trim();
-    } else if (typeof memo === 'object') {
-      cleanMemo = JSON.stringify(memo);
-    } else if (memo === undefined || memo === null) {
-      cleanMemo = 'No memo provided';
-    } else {
-      cleanMemo = String(memo);
-    }
-    if (cleanMemo.length > 100) {
-      cleanMemo = cleanMemo.slice(0, 97) + '...';
-    }
+    const senderWallet = WALLET_MAP.sender;
+    const recipientWallet = WALLET_MAP.recipient;
 
-    // Encode memo as hex
-    let hexMemo: string;
-    try {
-      hexMemo = Buffer.from(cleanMemo, 'utf8').toString('hex');
-    } catch (e: any) {
-      console.error("Buffer.from failed:", e.message);
-      hexMemo = Buffer.from("Fallback memo", 'utf8').toString('hex');
-    }
-
-    if (!recipient || !sender) {
+    if (!senderWallet.address || !senderWallet.secret) {
       return NextResponse.json(
-        { error: 'Recipient and sender are required.' },
-        { status: 400 }
+        { error: 'Sender wallet not configured' },
+        { status: 500 }
       );
     }
 
-    const senderWallet = walletMap[sender];
-    const recipientWallet = walletMap[recipient];
-    if (!senderWallet || !recipientWallet) {
+    if (!recipientWallet.address) {
       return NextResponse.json(
-        { error: 'Sender or recipient wallet not found.' },
-        { status: 400 }
+        { error: 'Recipient wallet not configured' },
+        { status: 500 }
       );
     }
 
-    const client = new xrpl.Client("wss://s.altnet.rippletest.net:51233");
+    const client = new xrpl.Client('wss://s.altnet.rippletest.net:51233');
     await client.connect();
 
-    const wallet = xrpl.Wallet.fromSeed(senderWallet.secret!);
+    const wallet = xrpl.Wallet.fromSeed(senderWallet.secret);
+
+    const hexMemo = Buffer.from(memo).toString('hex');
 
     const tx = {
       TransactionType: "Payment",
-      Account: senderWallet.address!,
+      Account: senderWallet.address,
       Amount: xrpl.xrpToDrops(amount),
-      Destination: recipientWallet.address!,
+      Destination: recipientWallet.address,
       Memos: [
         {
           Memo: {
@@ -92,7 +60,7 @@ export async function POST(request: Request) {
           },
         },
       ],
-    };
+    } as xrpl.Payment;
 
     console.log("XRPL TX object:", tx);
 
@@ -108,12 +76,12 @@ export async function POST(request: Request) {
     return NextResponse.json({
       txHash: hash,
       explorer: explorerUrl,
-      status: result.result.meta.TransactionResult,
+      status: (result.result.meta as xrpl.TransactionMetadataBase)?.TransactionResult || 'unknown',
     });
   } catch (err: any) {
-    console.error('Confirm Error:', err?.data || err?.message || err);
+    console.error('Transaction error:', err);
     return NextResponse.json(
-      { error: 'Transaction failed.' },
+      { error: err.message || 'Transaction failed' },
       { status: 500 }
     );
   }

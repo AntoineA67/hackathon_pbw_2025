@@ -207,10 +207,11 @@ function AIBall({ size, onToggle, isActive, setIsActive, append, setInput }: any
       }
 
       draw() {
-        ctx.beginPath()
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
-        ctx.fillStyle = `hsla(${this.hue}, 80%, 60%, ${this.alpha})`
-        ctx.fill()
+        if (!ctx) return;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${this.hue}, 80%, 60%, ${this.alpha})`;
+        ctx.fill();
       }
 
       isDead() {
@@ -322,7 +323,7 @@ function AIBall({ size, onToggle, isActive, setIsActive, append, setInput }: any
       >
         <canvas
           ref={canvasRef}
-          className="w-full h-full cursor-pointer transition-all duration-500 ease-in-out z-[1]"
+          className="size-full cursor-pointer transition-all duration-500 ease-in-out z-[1]"
           style={{
             borderRadius: "50%",
             width: `${currentSize}px`,

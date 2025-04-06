@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     });
 
     const transcription = await groq.audio.transcriptions.create({
-      file: buffer,
+      file: file,
       model: "whisper-large-v3",
       response_format: "verbose_json",
     });

@@ -1,10 +1,9 @@
 'use client';
 
 import useSWR from 'swr';
-import { UIArtifact } from '@/components/artifact';
 import { useCallback, useMemo } from 'react';
 
-export const initialArtifactData: UIArtifact = {
+export const initialArtifactData: any = {
   documentId: 'init',
   content: '',
   kind: 'text',
@@ -19,10 +18,10 @@ export const initialArtifactData: UIArtifact = {
   },
 };
 
-type Selector<T> = (state: UIArtifact) => T;
+type Selector<T> = (state: any) => T;
 
 export function useArtifactSelector<Selected>(selector: Selector<Selected>) {
-  const { data: localArtifact } = useSWR<UIArtifact>('artifact', null, {
+  const { data: localArtifact } = useSWR<any>('artifact', null, {
     fallbackData: initialArtifactData,
   });
 
@@ -35,7 +34,7 @@ export function useArtifactSelector<Selected>(selector: Selector<Selected>) {
 }
 
 export function useArtifact() {
-  const { data: localArtifact, mutate: setLocalArtifact } = useSWR<UIArtifact>(
+  const { data: localArtifact, mutate: setLocalArtifact } = useSWR<any>(
     'artifact',
     null,
     {
@@ -49,8 +48,8 @@ export function useArtifact() {
   }, [localArtifact]);
 
   const setArtifact = useCallback(
-    (updaterFn: UIArtifact | ((currentArtifact: UIArtifact) => UIArtifact)) => {
-      setLocalArtifact((currentArtifact) => {
+    (updaterFn: any | ((currentArtifact: any) => any)) => {
+      setLocalArtifact((currentArtifact: any) => {
         const artifactToUpdate = currentArtifact || initialArtifactData;
 
         if (typeof updaterFn === 'function') {

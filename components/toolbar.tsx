@@ -27,8 +27,6 @@ import {
 } from '@/components/ui/tooltip';
 
 import { ArrowUpIcon, StopIcon, SummarizeIcon } from './icons';
-import { artifactDefinitions, ArtifactKind } from './artifact';
-import { ArtifactToolbarItem } from './create-artifact';
 import { UseChatHelpers } from '@ai-sdk/react';
 
 type ToolProps = {
@@ -254,7 +252,11 @@ export const Tools = ({
   append: UseChatHelpers['append'];
   isAnimating: boolean;
   setIsToolbarVisible: Dispatch<SetStateAction<boolean>>;
-  tools: Array<ArtifactToolbarItem>;
+  tools: Array<{
+    description: string;
+    icon: ReactNode;
+    onClick: ({ appendMessage }: { appendMessage: UseChatHelpers['append'] }) => void;
+  }>;
 }) => {
   const [primaryTool, ...secondaryTools] = tools;
 
@@ -303,7 +305,6 @@ const PureToolbar = ({
   status,
   stop,
   setMessages,
-  artifactKind,
 }: {
   isToolbarVisible: boolean;
   setIsToolbarVisible: Dispatch<SetStateAction<boolean>>;
@@ -311,7 +312,6 @@ const PureToolbar = ({
   append: UseChatHelpers['append'];
   stop: UseChatHelpers['stop'];
   setMessages: UseChatHelpers['setMessages'];
-  artifactKind: ArtifactKind;
 }) => {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -355,20 +355,6 @@ const PureToolbar = ({
     }
   }, [status, setIsToolbarVisible]);
 
-  const artifactDefinition = artifactDefinitions.find(
-    (definition) => definition.kind === artifactKind,
-  );
-
-  if (!artifactDefinition) {
-    throw new Error('Artifact definition not found!');
-  }
-
-  const toolsByArtifactKind = artifactDefinition.toolbar;
-
-  if (toolsByArtifactKind.length === 0) {
-    return null;
-  }
-
   return (
     <TooltipProvider delayDuration={0}>
       <motion.div
@@ -387,7 +373,7 @@ const PureToolbar = ({
               : {
                   opacity: 1,
                   y: 0,
-                  height: toolsByArtifactKind.length * 50,
+                  height: 50,
                   transition: { delay: 0 },
                   scale: 1,
                 }
@@ -444,7 +430,7 @@ const PureToolbar = ({
             selectedTool={selectedTool}
             setIsToolbarVisible={setIsToolbarVisible}
             setSelectedTool={setSelectedTool}
-            tools={toolsByArtifactKind}
+            tools={[]}
           />
         )}
       </motion.div>
@@ -455,7 +441,6 @@ const PureToolbar = ({
 export const Toolbar = memo(PureToolbar, (prevProps, nextProps) => {
   if (prevProps.status !== nextProps.status) return false;
   if (prevProps.isToolbarVisible !== nextProps.isToolbarVisible) return false;
-  if (prevProps.artifactKind !== nextProps.artifactKind) return false;
 
   return true;
 });

@@ -62,7 +62,7 @@ export function AssistantMessage({ message }: AssistantMessageProps) {
         <Card className="w-full max-w-2xl border-green-500/20 bg-green-500/5">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-green-500">
-              <div className="h-2 w-2 rounded-full bg-green-500" />
+              <div className="size-2 rounded-full bg-green-500" />
               Transaction Successful
             </CardTitle>
           </CardHeader>
@@ -84,7 +84,7 @@ export function AssistantMessage({ message }: AssistantMessageProps) {
               className="flex items-center gap-2 text-sm text-green-500 hover:underline"
             >
               View transaction details
-              <ExternalLink className="h-4 w-4" />
+              <ExternalLink className="size-4" />
             </Link>
           </CardContent>
         </Card>

@@ -23,7 +23,7 @@ export function TransactionMessage({ content, className }: TransactionMessagePro
         )}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-green-500">
-              <div className="h-2 w-2 rounded-full bg-green-500" />
+              <div className="size-2 rounded-full bg-green-500" />
               Transaction Successful
             </CardTitle>
           </CardHeader>
@@ -45,7 +45,7 @@ export function TransactionMessage({ content, className }: TransactionMessagePro
               className="flex items-center gap-2 text-sm text-green-500 hover:underline"
             >
               View transaction details
-              <ExternalLink className="h-4 w-4" />
+              <ExternalLink className="size-4" />
             </Link>
           </CardContent>
         </Card>

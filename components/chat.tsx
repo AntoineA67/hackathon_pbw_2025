@@ -96,7 +96,7 @@ export function Chat({
           transform: "translate(-50%, -50%)",
         }}
       >
-        <SiXrp className="w-[50vh] h-[50vh] text-white" />
+        <SiXrp className="size-[50vh] text-white" />
       </div>
           <ChatHeader
             chatId={id}
