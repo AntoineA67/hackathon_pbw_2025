@@ -50,7 +50,7 @@ export const sendCheck = tool({
         invoice_id: validatedData.invoiceId,
         seed: process.env.SENDER_SECRET,
       }
-      const response = await fetch(`${process.env.BACKEND_URL}/api/checks`, {
+      const response = await fetch(`${process.env.BACKEND_URL}/api/payments/checks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -65,6 +65,7 @@ export const sendCheck = tool({
       }
 
       const result = await response.json();
+      console.log('Check sent successfully:', result);
       return result;
     } catch (error) {
       console.error('Check sending failed:', error);
