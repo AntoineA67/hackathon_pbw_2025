@@ -7,7 +7,6 @@ import useSWR, { useSWRConfig } from 'swr';
 import { ChatHeader } from '@/components/chat-header';
 import type { Vote } from '@/lib/db/schema';
 import { fetcher, generateUUID } from '@/lib/utils';
-import { Artifact } from './artifact';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
 import type { VisibilityType } from './visibility-selector';
@@ -72,12 +71,6 @@ export function Chat({
         className={`
           flex flex-col min-w-0 h-dvh transition-all duration-500 ease-in-out bg-gradient-to-br from-blue-950 via-slate-900 to-blue-900`}
       >
-        {/* <ChatHeader
-          chatId={id}
-          selectedModelId={selectedChatModel}
-          selectedVisibilityType={selectedVisibilityType}
-          isReadonly={isReadonly}
-        /> */}
 
         <Messages
           chatId={id}
@@ -119,23 +112,6 @@ export function Chat({
           )}
         </form>
       </div>
-
-      <Artifact
-        chatId={id}
-        input={input}
-        setInput={setInput}
-        handleSubmit={handleSubmit}
-        status={status}
-        stop={stop}
-        attachments={attachments}
-        setAttachments={setAttachments}
-        append={append}
-        messages={messages}
-        setMessages={setMessages}
-        reload={reload}
-        votes={votes}
-        isReadonly={isReadonly}
-      />
     </>
   );
 }

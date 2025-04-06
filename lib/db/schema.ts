@@ -150,3 +150,15 @@ export const suggestion = pgTable(
 );
 
 export type Suggestion = InferSelectModel<typeof suggestion>;
+
+export const contact = pgTable('Contact', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  firstName: varchar('firstName', { length: 64 }).notNull(),
+  lastName: varchar('lastName', { length: 64 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  walletAddress: varchar('walletAddress', { length: 64 }).notNull(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+});
+
+export type Contact = InferSelectModel<typeof contact>;

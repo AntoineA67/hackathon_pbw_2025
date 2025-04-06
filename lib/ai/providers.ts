@@ -34,5 +34,5 @@ export const myProvider = isTestEnvironment
       },
       imageModels: {
         'small-model': xai.image('grok-2-image'),
-      },
+    },
     });

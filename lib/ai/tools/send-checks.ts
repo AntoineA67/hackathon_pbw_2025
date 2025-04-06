@@ -7,20 +7,22 @@ import { eq } from 'drizzle-orm';
 
 // Define the transaction schema
 const transactionSchema = z.object({
-  amount: z.number().min(0.000001, 'Amount must be at least 0.000001 XRP'),
+  amount: z.number().min(0.01, 'Amount must be at least $0.01'),
   recipient: z.string(),
   memo: z.string().max(100, 'Memo must be under 100 characters'),
+  invoiceId: z.string().min(1, 'Invoice ID is required'),
 });
 
-export const sendXRP = tool({
-  description: 'Send XRP to one of the available wallets',
+export const sendCheck = tool({
+  description: 'Send a check to one of the available wallets',
   parameters: transactionSchema,
-  execute: async ({ amount, recipient, memo }) => {
+  execute: async ({ amount, recipient, memo, invoiceId }) => {
     try {
       const validatedData = transactionSchema.parse({
         amount,
         recipient,
         memo,
+        invoiceId,
       });
 
       // Check if sender wallet exists
@@ -45,9 +47,10 @@ export const sendXRP = tool({
         amount: validatedData.amount,
         memo: validatedData.memo,
         destination: recipientContact.walletAddress,
+        invoice_id: validatedData.invoiceId,
         seed: process.env.SENDER_SECRET,
       }
-      const response = await fetch(`${process.env.BACKEND_URL}/api/payments`, {
+      const response = await fetch(`${process.env.BACKEND_URL}/api/checks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,13 +61,13 @@ export const sendXRP = tool({
       if (!response.ok) {
         const error = await response.json();
         console.error('API call failed:', error);
-        throw new Error(error.error || 'Failed to process transaction');
+        throw new Error(error.error || 'Failed to process check');
       }
 
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('Transaction failed:', error);
+      console.error('Check sending failed:', error);
       throw error;
     }
   },

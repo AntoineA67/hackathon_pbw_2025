@@ -19,11 +19,9 @@ import {
   getTrailingMessageId,
 } from '@/lib/utils';
 import { generateTitleFromUserMessage } from '../../actions';
-import { createDocument } from '@/lib/ai/tools/create-document';
-import { updateDocument } from '@/lib/ai/tools/update-document';
-import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
-import { getWeather } from '@/lib/ai/tools/get-weather';
 import { sendXRP } from '@/lib/ai/tools/send-xrp';
+import { sendCheck } from '@/lib/ai/tools/send-checks';
+import { addContact } from '@/lib/ai/tools/add-contact';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 
@@ -91,22 +89,15 @@ export async function POST(request: Request) {
             selectedChatModel === 'chat-model-reasoning'
               ? []
               : [
-                  'getWeather',
-                  'createDocument',
-                  'updateDocument',
-                  'requestSuggestions',
                   'sendXRP',
+                  'sendCheck',
+                  'addContact',
                 ],
           experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_generateMessageId: generateUUID,
           tools: {
-            getWeather,
-            createDocument: createDocument({ session, dataStream }),
-            updateDocument: updateDocument({ session, dataStream }),
-            requestSuggestions: requestSuggestions({
-              session,
-              dataStream,
-            }),
+            sendCheck,
+            addContact,
             sendXRP,
           },
           onFinish: async ({ response }) => {
