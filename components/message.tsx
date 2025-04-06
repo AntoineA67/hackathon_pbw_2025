@@ -20,6 +20,7 @@ import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
 import { UseChatHelpers } from '@ai-sdk/react';
 import { SiXrp } from "react-icons/si"
+import { TransactionMessage } from './chat/transaction-message';
 
 const PurePreviewMessage = ({
   chatId,
@@ -124,7 +125,17 @@ const PurePreviewMessage = ({
                             message.role === 'user',
                         })}
                       >
-                        <Markdown>{part.text}</Markdown>
+                        {message.role === 'assistant' && 
+                         part.text.includes('"hash"') && 
+                         part.text.includes('"balance"') && 
+                         part.text.includes('XRP') && 
+                         part.text.includes('sending') ? (
+                          <div className="w-full">
+                            <TransactionMessage content={part.text} />
+                          </div>
+                        ) : (
+                          <Markdown>{part.text}</Markdown>
+                        )}
                       </div>
                     </div>
                   );

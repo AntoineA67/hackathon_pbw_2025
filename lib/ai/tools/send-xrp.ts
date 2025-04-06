@@ -30,21 +30,21 @@ export const sendXRP = tool({
       }
 
       // Get recipient's wallet address from database
-      const [recipientContact] = await db
-        .select()
-        .from(contact)
-        .where(eq(contact.firstName, recipient))
-        .limit(1);
+      // const [recipientContact] = await db
+      //   .select()
+      //   .from(contact)
+      //   .where(eq(contact.firstName, recipient))
+      //   .limit(1);
 
-      if (!recipientContact?.walletAddress) {
-        console.error(`Recipient wallet for "${recipient}" not found in database`);
-        throw new Error(`Recipient wallet for "${recipient}" not found in database`);
-      }
+      // if (!recipientContact?.walletAddress) {
+      //   console.error(`Recipient wallet for "${recipient}" not found in database`);
+      //   throw new Error(`Recipient wallet for "${recipient}" not found in database`);
+      // }
       
       const body = {
         amount: validatedData.amount,
         memo: validatedData.memo,
-        destination: recipientContact.walletAddress,
+        destination: validatedData.recipient,
         seed: process.env.SENDER_SECRET,
       }
       const response = await fetch(`${process.env.BACKEND_URL}/api/payments`, {
