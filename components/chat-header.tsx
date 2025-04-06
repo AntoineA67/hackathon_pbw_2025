@@ -37,11 +37,9 @@ function PureChatHeader({
       {/* <SidebarToggle /> */}
 
       {(!open || windowWidth < 768) && path != "/" && (
-        <button
-          onClick={() => {router.push('/');}}
-        >
+        <Link href='/'>
           <IoMdReturnLeft size={30} className="transition-all ease-in-out duration-300 p-1 rounded-lg active:bg-white active:text-black"/>
-        </button>
+        </Link>
       )}
 
       {/* {!isReadonly && (

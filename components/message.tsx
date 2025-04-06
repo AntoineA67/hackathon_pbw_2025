@@ -66,7 +66,7 @@ const PurePreviewMessage = ({
             </div>
           )}
 
-          <div className="flex flex-col gap-4 w-full justify-center">
+          <div className="flex gap-4 w-full justify-start items-center">
             {message.experimental_attachments && (
               <div
                 data-testid={`message-attachments`}
@@ -120,7 +120,7 @@ const PurePreviewMessage = ({
                       <div
                         data-testid="message-content"
                         className={cn('flex flex-col gap-4', {
-                          'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
+                          'bg-black bg-opacity-30 text-primary-foreground px-3 py-2 rounded-xl':
                             message.role === 'user',
                         })}
                       >

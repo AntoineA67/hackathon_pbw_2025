@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { unstable_serialize } from 'swr/infinite';
 import { getChatHistoryPaginationKey } from './sidebar-history';
 import { Greeting } from '@/components/greeting';
+import { motion } from 'framer-motion';
 
 export function Chat({
   id,
@@ -68,57 +69,57 @@ export function Chat({
 
   return (
     <>
-      <div
+      <motion.div
         className={`
-          flex flex-col min-w-0 h-dvh transition-all duration-500 ease-in-out bg-gradient-to-br from-blue-950 via-slate-900 to-blue-900`}
+          flex flex-col min-w-0 h-dvh transition-all duration-500 ease-in-out
+        `}
+        animate={{
+          background: isActive
+        ? 'linear-gradient(to bottom right, #1e3a8a, #1e293b, #1e40af)'
+        : 'linear-gradient(to bottom right, #1e293b, #1e3a8a, #1e40af)',
+        }}
+        transition={{ duration: 0.5, ease: 'easeInOut' }}
       >
-        <ChatHeader
-          chatId={id}
-          selectedModelId={selectedChatModel}
-          selectedVisibilityType={selectedVisibilityType}
-          isReadonly={isReadonly}
-        />
+          <ChatHeader
+            chatId={id}
+            selectedModelId={selectedChatModel}
+            selectedVisibilityType={selectedVisibilityType}
+            isReadonly={isReadonly}
+          />
 
-        <Messages
-          chatId={id}
-          status={status}
-          votes={votes}
-          messages={messages}
-          setMessages={setMessages}
-          reload={reload}
-          isReadonly={isReadonly}
-          isArtifactVisible={isArtifactVisible}
-          isActive={isActive}
-          setIsActive={setIsActive}
-        />
-
-        {/* {messages.length === 0 && (
-          <Greeting
+          <Messages
+            chatId={id}
+            status={status}
+            votes={votes}
+            messages={messages}
+            setMessages={setMessages}
+            reload={reload}
+            isReadonly={isReadonly}
+            isArtifactVisible={isArtifactVisible}
             isActive={isActive}
             setIsActive={setIsActive}
             append={append}
             setInput={setInput}
           />
-        )} */}
 
         <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
           {!isReadonly && (
-            <MultimodalInput
-              chatId={id}
-              input={input}
-              setInput={setInput}
-              handleSubmit={handleSubmit}
-              status={status}
-              stop={stop}
-              attachments={attachments}
-              setAttachments={setAttachments}
-              messages={messages}
-              setMessages={setMessages}
-              append={append}
-            />
+        <MultimodalInput
+          chatId={id}
+          input={input}
+          setInput={setInput}
+          handleSubmit={handleSubmit}
+          status={status}
+          stop={stop}
+          attachments={attachments}
+          setAttachments={setAttachments}
+          messages={messages}
+          setMessages={setMessages}
+          append={append}
+        />
           )}
         </form>
-      </div>
+      </motion.div>
 
       <Artifact
         chatId={id}
