@@ -5,86 +5,38 @@ import { useState, useEffect, useRef } from "react"
 import { SiXrp } from "react-icons/si"
 import { FaMicrophone } from "react-icons/fa"
 
-function AIBall({ append, setInput }: { 
-  append: (message: { role: 'user' | 'assistant'; content: string }, chatRequestOptions?: any) => Promise<string | null | undefined>;
-  setInput: (input: string) => void;
-}) {
-  const [isActive, setIsActive] = useState(false);
-  const [size, setSize] = useState(192);
-  const [isRecording, setIsRecording] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>(0);
+interface AIBallProps {
+  size?: number
+  idleColor?: string
+  activeColor?: string
+  onToggle?: (isActive: boolean) => void
+}
+
+function AIBall({ size, onToggle, isActive, setIsActive, append, setInput }: any) {
+  const [currentSize, setCurrentSize] = useState(size)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const animationRef = useRef<number>(0)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [rotation, setRotation] = useState(0)
+  const [scale, setScale] = useState(1)
 
-  useEffect(() => {
-    // Check if we're in a browser environment
-    if (typeof window !== 'undefined') {
-      const userAgent = window.navigator.userAgent;
-      setIsMobile(/iPhone|iPad|iPod|Android/i.test(userAgent));
-    }
-  }, []);
-
-  const SILENCE_THRESHOLD = isMobile ? -45 : -50;
-  const SILENCE_DURATION = isMobile ? 1500 : 1000;
-
-  const requestMicrophonePermission = async () => {
-    try {
-      // Check if we're in a browser environment and if mediaDevices is available
-      if (typeof window === 'undefined' || !window.navigator.mediaDevices) {
-        throw new Error('Media devices not available');
-      }
-
-      const stream = await window.navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        } 
-      });
-      return stream;
-    } catch (err) {
-      if (err instanceof Error) {
-        if (err.name === 'NotAllowedError') {
-          setError('Microphone access was denied. Please allow microphone access to use voice input.');
-        } else if (err.name === 'NotFoundError') {
-          setError('No microphone found. Please connect a microphone to use voice input.');
-        } else {
-          setError('Error accessing microphone: ' + err.message);
-        }
-      }
-      throw err;
-    }
-  };
+  const SILENCE_THRESHOLD = -50; // dB
+  const SILENCE_DURATION = 1000; // ms
 
   const startRecording = async () => {
     try {
-      setError(null);
-      const stream = await requestMicrophonePermission();
-      
-      // Check if AudioContext is available
-      if (typeof window === 'undefined' || !window.AudioContext) {
-        throw new Error('AudioContext not available');
-      }
-
-      // Create audio context after user interaction (required for mobile)
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-      
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: isMobile ? 'audio/webm' : 'audio/m4a'
-      });
-      
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
       // Set up audio analysis for silence detection
+      audioContextRef.current = new AudioContext();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       const analyser = audioContextRef.current.createAnalyser();
       analyserRef.current = analyser;
@@ -127,15 +79,7 @@ function AIBall({ append, setInput }: {
 
       mediaRecorder.onstop = async () => {
         console.log("onstop");
-        const audioBlob = new Blob(audioChunksRef.current, { 
-          type: isMobile ? 'audio/webm' : 'audio/m4a' 
-        });
-        
-        if (audioBlob.size === 0) {
-          setError('No audio was recorded. Please try again.');
-          return;
-        }
-
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/m4a' });
         const formData = new FormData();
         formData.append('file', audioBlob, 'audio.m4a');
 
@@ -149,20 +93,16 @@ function AIBall({ append, setInput }: {
             const { text } = await response.json();
             if (text) {
               console.log('transcribed text:', text);
+              // Process the transcribed text as a user message
               await append({
                 role: 'user',
                 content: text
               });
               setInput('');
-            } else {
-              setError('No text was transcribed. Please try again.');
             }
-          } else {
-            setError('Failed to transcribe audio. Please try again.');
           }
         } catch (error) {
           console.error('Error processing audio:', error);
-          setError('Error processing audio. Please try again.');
         }
 
         // Clean up audio context
@@ -173,15 +113,11 @@ function AIBall({ append, setInput }: {
         analyserRef.current = null;
       };
 
-      // Start recording with a small time slice for better mobile performance
-      mediaRecorder.start(100);
+      mediaRecorder.start();
       setIsRecording(true);
       checkSilence();
     } catch (error) {
       console.error('Error accessing microphone:', error);
-      if (error instanceof Error) {
-        setError(error.message);
-      }
     }
   };
 
@@ -200,246 +136,232 @@ function AIBall({ append, setInput }: {
   };
 
   const toggleActive = () => {
-    if (!isActive) {
+    const newState = !isActive
+    if (!isActive)
       startRecording();
-    } else {
+    else
       stopRecording();
-    }
-    setIsActive(!isActive);
-  };
-
-  // Canvas animation
+    setIsActive(newState)
+    setCurrentSize(newState ? size * 1.20 : size)
+    if (onToggle) onToggle(newState)
+  }
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // Set canvas dimensions with device pixel ratio for sharpness
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-
-    // Center of the canvas
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-
-    // Base radius of the ball
-    const radius = Math.min(centerX, centerY) * 0.8;
-
-    // Animation variables
-    let hue = 210; // Slightly blueish hue
-    let time = 0;
-    let particleTime = 0;
-    const particles: Particle[] = [];
-
-    // Particle class for the orbiting particles
-    class Particle {
-      x: number;
-      y: number;
-      size: number;
-      speed: number;
-      angle: number;
-      distance: number;
-      hue: number;
-      alpha: number;
-
-      constructor() {
-        this.angle = Math.random() * Math.PI * 2;
-        this.distance = radius * (0.6 + Math.random() * 0.3);
-        this.x = centerX + Math.cos(this.angle) * this.distance;
-        this.y = centerY + Math.sin(this.angle) * this.distance;
-        this.size = 1 + Math.random() * 3;
-        this.speed = 0.01 + Math.random() * 0.02;
-        this.hue = hue + Math.random() * 30 - 15;
-        this.alpha = 0.1 + Math.random() * 0.4;
-      }
-
-      update() {
-        this.angle += this.speed;
-        this.x = centerX + Math.cos(this.angle) * this.distance;
-        this.y = centerY + Math.sin(this.angle) * this.distance;
-
-        // Fade out particles over time
-        this.alpha -= 0.002;
-        if (this.alpha <= 0) this.alpha = 0;
-      }
-
-      draw() {
-        if (!ctx) return;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${this.hue}, 80%, 60%, ${this.alpha})`;
-        ctx.fill();
-      }
-
-      isDead() {
-        return this.alpha <= 0;
-      }
+    let frameId: number
+    
+    const animateLogo = () => {
+      setRotation(prev => (prev + 0.1) % 360)
+      setScale(1 + Math.sin(Date.now() * 0.002) * 0.05)
+      frameId = requestAnimationFrame(animateLogo)
     }
+    
+    animateLogo()
+    
+    return () => {
+      cancelAnimationFrame(frameId)
+    }
+  }, [])
 
-    // Animation loop
-    const animate = () => {
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
 
-      // Update time
-      time += 0.01;
-      particleTime += 0.05;
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
 
-      // Shift hue slowly
-      hue = (hue + 0.1) % 360;
+    const dpr = window.devicePixelRatio || 1
+    const rect = canvas.getBoundingClientRect()
+    canvas.width = rect.width * dpr
+    canvas.height = rect.height * dpr
+    ctx.scale(dpr, dpr)
 
-      // Draw main sphere with gradient
-      const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+    const centerX = rect.width / 2
+    const centerY = rect.height / 2
 
-      // Gradient colors based on state and time
-      const baseHue = isActive ? (hue + 40) % 360 : hue;
-      const pulseIntensity = Math.sin(time * 2) * 0.1 + 0.9;
-      const pulseRadius = radius * pulseIntensity;
-
-      gradient.addColorStop(0, `hsla(${baseHue}, 80%, 70%, 0.9)`);
-      gradient.addColorStop(0.5, `hsla(${baseHue + 20}, 80%, 60%, 0.8)`);
-      gradient.addColorStop(1, `hsla(${baseHue + 40}, 80%, 50%, 0.2)`);
-
-      // Draw the main sphere
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
-      ctx.fillStyle = gradient;
-      ctx.fill();
-
-      // Add inner glow
-      const innerGlow = ctx.createRadialGradient(
-        centerX - radius * 0.3,
-        centerY - radius * 0.3,
-        0,
-        centerX,
-        centerY,
-        radius
-      );
-      innerGlow.addColorStop(0, `hsla(${baseHue}, 100%, 90%, 0.8)`);
-      innerGlow.addColorStop(0.5, `hsla(${baseHue}, 100%, 70%, 0.1)`);
-      innerGlow.addColorStop(1, `hsla(${baseHue}, 100%, 60%, 0)`);
-
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
-      ctx.fillStyle = innerGlow;
-      ctx.fill();
-
-      // Add particles when active
-      if (isActive && Math.random() > 0.7) {
-        particles.push(new Particle());
-      }
-
-      // Update and draw particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        particles[i].update();
-        particles[i].draw();
-
-        // Remove dead particles
-        if (particles[i].isDead()) {
-          particles.splice(i, 1);
+    const radius = Math.min(centerX, centerY) * 0.8
+    let time = 0
+    
+    class Wave {
+      points: { x: number; y: number }[]
+      color: string
+      amplitude: number
+      frequency: number
+      speed: number
+      phase: number
+      width: number
+      
+      constructor(color: string, amplitude: number, frequency: number, speed: number, width: number) {
+        this.points = []
+        this.color = color
+        this.amplitude = amplitude
+        this.frequency = frequency
+        this.speed = speed
+        this.phase = Math.random() * Math.PI * 2
+        this.width = width
+        
+        for (let i = 0; i <= 100; i++) {
+          const t = i / 100
+          const angle = t * Math.PI * 2
+          const x = centerX + Math.cos(angle) * radius * 0.7
+          const y = centerY + Math.sin(angle) * radius * 0.7
+          this.points.push({ x, y })
         }
       }
+      
+      update(time: number) {
+        for (let i = 0; i <= 100; i++) {
+          const t = i / 100
+          const angle = t * Math.PI * 2
+          const offset = Math.sin(angle * this.frequency + time * 10 + this.phase) * this.amplitude
+          const waveRadius = radius * (0.7 + offset * 0.05)
+          
+          this.points[i] = {
+            x: centerX + Math.cos(angle) * waveRadius,
+            y: centerY + Math.sin(angle) * waveRadius
+          }
+        }
+      }
+      
+      draw() {
+        ctx.beginPath()
+        ctx.moveTo(this.points[0].x, this.points[0].y)
+        
+        for (let i = 1; i <= 100; i++) {
+          const p1 = this.points[i - 1]
+          const p2 = this.points[i % 100]
+          const cpX = (p1.x + p2.x) / 2
+          const cpY = (p1.y + p2.y) / 2
+          ctx.quadraticCurveTo(p1.x, p1.y, cpX, cpY)
+        }
+        
+        ctx.strokeStyle = this.color
+        ctx.lineWidth = this.width
+        ctx.stroke()
+      }
+    }
 
-      // Continue animation
-      animationRef.current = requestAnimationFrame(animate);
-    };
+    const waves = [
+      new Wave('rgba(219, 166, 255, 0.3)', 1.0, 2, 0.5, 1.5),
+      new Wave('rgba(173, 216, 230, 0.3)', 1.2, 3, 0.3, 1.2),
+      new Wave('rgba(255, 182, 193, 0.3)', 0.8, 4, 0.7, 3.0),
+      new Wave('rgba(144, 238, 144, 0.3)', 1.5, 5, 0.4, 1.8),
+    ]
+  
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      time += 0.01
+      const gradient = ctx.createRadialGradient(
+        centerX, 
+        centerY, 
+        0, 
+        centerX, 
+        centerY, 
+        radius
+      )
+      
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)')
+      gradient.addColorStop(0.3, 'rgba(219, 166, 255, 0.5)')
+      gradient.addColorStop(0.7, 'rgba(173, 216, 230, 0.5)')
+      gradient.addColorStop(1, 'rgba(255, 255, 255, 0.2)')
 
-    // Start animation
-    animate();
-
-    // Cleanup
+      ctx.beginPath()
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+      ctx.fillStyle = gradient
+      ctx.fill()
+      
+      ctx.beginPath()
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'
+      ctx.lineWidth = 1
+      ctx.stroke()
+      
+      const highlightGradient = ctx.createRadialGradient(
+        centerX - radius * 0.3, 
+        centerY - radius * 0.3, 
+        0, 
+        centerX, 
+        centerY, 
+        radius
+      )
+      
+      highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)')
+      highlightGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)')
+      highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)')
+      
+      ctx.beginPath()
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+      ctx.fillStyle = highlightGradient
+      ctx.fill()
+      
+      for (const wave of waves) {
+        wave.update(time)
+        wave.draw()
+      }
+      
+      if (isActive) {
+        const pulseSize = radius * (1.05 + Math.sin(time * 3) * 0.02)
+        ctx.beginPath()
+        ctx.arc(centerX, centerY, pulseSize, 0, Math.PI * 2)
+        ctx.strokeStyle = 'rgba(219, 166, 255, 0.3)'
+        ctx.lineWidth = 2
+        ctx.stroke()
+        
+        for (let i = 0; i < 10; i++) {
+          const ringSize = radius * (1.1 + (time * 0.3 + i * 0.33) % 1)
+          const opacity = 0.3 * (1 - ((time * 0.3 + i * 0.33) % 1))
+          
+          ctx.beginPath()
+          ctx.arc(centerX, centerY, ringSize, 0, Math.PI * 2)
+          ctx.strokeStyle = `rgba(219, 166, 255, ${opacity})`
+          ctx.lineWidth = 1
+          ctx.stroke()
+        }
+      }
+      animationRef.current = requestAnimationFrame(animate)
+    }
+    animate()
     return () => {
-      cancelAnimationFrame(animationRef.current);
-    };
-  }, [isActive]);
+      cancelAnimationFrame(animationRef.current)
+    }
+  }, [isActive, size])
+
+  const logoSize = currentSize * 0.25
 
   return (
-    <div className="relative items-center justify-center">
-      {error && (
-        <div className="absolute bottom-full mb-2 text-red-500 text-sm">
-          {error}
-        </div>
-      )}
+    <div className="flex items-center justify-center">
       <button
         onClick={toggleActive}
-        className="group w-64 h-64 rounded-full focus:outline-none flex items-center justify-center"
-        aria-label="AI Assistant"
+        className="group rounded-full focus:outline-none flex items-center justify-center"
+        aria-label={isActive ? "AI Assistant is active" : "AI Assistant is idle"}
       >
         <canvas
           ref={canvasRef}
           className="w-full h-full cursor-pointer transition-all duration-500 ease-in-out z-[1]"
           style={{
             borderRadius: "50%",
-            width: `${size}px`,
-            height: `${size}px`,
+            width: `${currentSize}px`,
+            height: `${currentSize}px`,
           }}
         />
-        {isActive ? (
-          <>
-            <span className="transition-all ease-in-out absolute w-[110%] h-[110%] rounded-full bg-gradient-to-br from-blue-750 via-slate-900 to-blue-800 animate-[pulse_1.5s_ease-in-out_infinite]"></span>
-            <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></span>
-            <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_0.4s]"></span>
-            <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_0.8s]"></span>
-            <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_1.2s]"></span>
-            <span className="transition-all ease-in-out absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-800 to-blue-800 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_1.6s]"></span>
-            <span className="transition-all ease-in-out absolute inset-0 rounded-full bg-gradient-radial from-blue-300/20 to-transparent"></span>
-          </>
-          ) : (
-          <>
-            <span className="absolute w-full h-full rounded-full bg-gradient-to-br from-blue-750 via-slate-900 to-blue-800 animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite_2s]"></span>
-          </>
-        )}
-
-        <div
-          className={`absolute inset-0 rounded-full transition-all duration-500 pointer-events-none
-          ${isActive
-            ? "opacity-100 animate-pulse"
-            : "opacity-0 group-hover:opacity-50"
-          }`}
-        />
+        <div className="absolute inset-0 rounded-full shadow-lg shadow-black/20 -z-10"></div>
       </button>
     </div>
-  );
+  )
 }
 
-export const Greeting = ({
-  isActive,
-  setIsActive,
-  append,
-  setInput
-}: {
+export const Greeting = ({ isActive, setIsActive, messagesLength, append, setInput }: {
   isActive: boolean;
-  setIsActive: (active: boolean) => void;
-  append: (message: { role: 'user' | 'assistant'; content: string }, chatRequestOptions?: any) => Promise<string | null | undefined>;
-  setInput: (input: string) => void;
+  setIsActive: any;
+  messagesLength: number;
+  append: any;
+  setInput: any;
 }) => {
-  const [showMicrophone, setShowMicrophone] = useState(false);
-
-  useEffect(() => {
-    const iconInterval = setInterval(() => {
-      setShowMicrophone(true);
-
-      setTimeout(() => {
-        setShowMicrophone(false);
-      }, 1000);
-    }, 3000);
-
-    return () => clearInterval(iconInterval);
-  }, []);
 
   return (
-    <div className="max-w-3xl mx-auto md:mt-20 px-8 size-full flex flex-col justify-center items-center">
-      {!isActive && (
-        <h1 className="relative text-3xl font-bold text-white">
-          How may I assist you today?
-        </h1>
-      )}
-      <AIBall append={append} setInput={setInput} />
+    <div className="max-w-3xl mx-auto size-full flex flex-col justify-start items-center">
+      <h1 className={`relative text-2xl font-bold text-white mb-2 ${(isActive || messagesLength) ? "hidden" : ""}`}>
+        How may I assist you today?
+      </h1>
+      <AIBall size={160} isActive={isActive} setIsActive={setIsActive} append={append} setInput={setInput}/>
     </div>
   );
 };

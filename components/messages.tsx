@@ -3,7 +3,7 @@ import { PreviewMessage, ThinkingMessage } from './message';
 import { useScrollToBottom } from './use-scroll-to-bottom';
 import { Greeting } from './greeting';
 import { memo } from 'react';
-import type { Vote } from '@/lib/db/schema';
+import { message, type Vote } from '@/lib/db/schema';
 import equal from 'fast-deep-equal';
 import type { UseChatHelpers } from '@ai-sdk/react';
 
@@ -17,7 +17,9 @@ interface MessagesProps {
   isReadonly: boolean;
   isArtifactVisible: boolean;
   isActive: boolean;
-  setIsActive:any
+  setIsActive:any;
+  append:any;
+  setInput:any;
 }
 
 function PureMessages({
@@ -30,42 +32,63 @@ function PureMessages({
   isReadonly,
   isActive,
   setIsActive,
+  append,
+  setInput
 }: MessagesProps) {
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
 
   return (
-    <div
-      ref={messagesContainerRef}
-      className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4"
-    >
-      {messages.length === 0 && <Greeting isActive={isActive} setIsActive={setIsActive} />}
+    <div className="flex flex-col min-w-0 flex-1 pt-4">
 
-      {messages.map((message, index) => (
+      <div
+        className={`flex transition-all duration-1000 top-0
+          ${messages.length === 0
+          ? 'items-center justify-center flex-1'
+          : 'pb-4 shadow-md shadow-black/20 mt-[-20px] rounded-lg'
+        }`}
+      >
+        <Greeting
+          isActive={isActive}
+          setIsActive={setIsActive}
+          messagesLength={messages.length}
+          append={append}
+          setInput={setInput}
+        />
+      </div>
+
+      {messages.length > 0 && (
+      <div
+        ref={messagesContainerRef}
+        className="flex flex-col gap-6 overflow-y-scroll flex-1 !bg-transparent max-h-[450px] mt-2"
+      >
+        {messages.map((message, index) => (
         <PreviewMessage
           key={message.id}
           chatId={chatId}
           message={message}
           isLoading={status === 'streaming' && messages.length - 1 === index}
           vote={
-            votes
-              ? votes.find((vote) => vote.messageId === message.id)
-              : undefined
+          votes
+        ? votes.find((vote) => vote.messageId === message.id)
+        : undefined
           }
           setMessages={setMessages}
           reload={reload}
           isReadonly={isReadonly}
         />
-      ))}
+        ))}
 
-      {status === 'submitted' &&
+        {status === 'submitted' &&
         messages.length > 0 &&
         messages[messages.length - 1].role === 'user' && <ThinkingMessage />}
 
-      <div
+        <div
         ref={messagesEndRef}
-        className="shrink-0 min-w-[24px] min-h-[24px]"
-      />
+        className="shrink-0 min-w-[24px] min-h-[24px] !bg-transparent"
+        />
+        </div>
+      )}
     </div>
   );
 }
