@@ -44,8 +44,8 @@ export const sendCrossCurrency = tool({
 
       return {
         success: true,
-		  transactionHash: result.hash,
-		balance: result.balance,
+		    transactionHash: result.hash,
+		    balance: result.balance,
         message: 'Cross-currency payment sent successfully',
       };
     } catch (error) {
