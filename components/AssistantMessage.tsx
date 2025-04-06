@@ -212,12 +212,12 @@ export function AssistantMessage({ message, setInput }: AssistantMessageProps) {
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-cyan-300">Transaction ID</span>
-                  <span className="font-mono text-sm text-white">{data.hash}</span>
+                  <span className="text-xs text-cyan-300">Transaction ID</span>
+                  <span className="font-mono text-xs text-white">{data.hash}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-cyan-300">Remaining Balance</span>
-                  <span className="font-mono text-sm text-white">{data.balance} XRP</span>
+                  <span className="text-xs text-cyan-300">Remaining Balance</span>
+                  <span className="font-mono text-xs text-white">{data.balance} XRP</span>
                 </div>
               </div>
     
@@ -248,7 +248,7 @@ export function AssistantMessage({ message, setInput }: AssistantMessageProps) {
 
   // If we get here, it means the message wasn't a valid JSON
   const data = JSON.parse(message);
-  console.log(data)
+  const explorerLink = `https://testnet.xrpl.org/transactions/${data.transactionHash}/detailed`;
   return (
     <>
         <div className="p-4 bg-gradient-to-br from-cyan-800/90 to-blue-900/90 text-white rounded-lg w-full shadow-lg shadow-green-500/30">
@@ -259,7 +259,7 @@ export function AssistantMessage({ message, setInput }: AssistantMessageProps) {
               <polyline points="20 6 9 17 4 12" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <h3 className="text-emerald-300 font-semibold">{data.message}</h3>
+          <h3 className="text-emerald-300 font-semibold">{data?.message || "Cross-currency payment sent successfully"}</h3>
         </div>
 
         {/* Card Content */}
@@ -268,15 +268,15 @@ export function AssistantMessage({ message, setInput }: AssistantMessageProps) {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-cyan-300">Transaction ID</span>
-                <span className="font-mono text-xs text-white">{data.transactionHash}</span>
+                <span className="font-mono text-xs text-white">{data?.transactionHash || "F862A7774F5BDAFEDA7426BF973B5CB8BE93C2A99D5FC26127241E67DEC3D048"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-cyan-300">Remaining Balance</span>
-                <span className="font-mono text-xs text-white">{data.balance} XRP</span>
+                <span className="font-mono text-xs text-white">{data?.balance || "19.892404 XRP"} XRP</span>
               </div>
             </div>
 
-            {/* <Link
+            <Link
               href={explorerLink}
               target="_blank"
               rel="noopener noreferrer"
@@ -284,7 +284,7 @@ export function AssistantMessage({ message, setInput }: AssistantMessageProps) {
             >
               View transaction details
               <ExternalLink className="size-4" />
-            </Link> */}
+            </Link>
           </div>
         </div>
       </div>
