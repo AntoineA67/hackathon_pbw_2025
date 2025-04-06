@@ -168,21 +168,6 @@ html {
 }
 
 ::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--muted);
-    border-radius: var(--radius);
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--primary);
-    border-radius: var(--radius);
-    border: 3px solid var(--muted);
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--primary-foreground);
+    width: 0px;
+    height: 0px;
 }

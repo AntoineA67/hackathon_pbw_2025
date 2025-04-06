@@ -7,6 +7,7 @@ import { type Vote } from '@/lib/db/schema';
 import equal from 'fast-deep-equal';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import { AssistantMessage } from './AssistantMessage';
+import { useEffect } from 'react';
 
 interface MessagesProps {
   chatId: string;
@@ -39,6 +40,12 @@ function PureMessages({
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
 
+    useEffect(() => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+      }
+    }, [messages])
+
   return (
     <div className="flex flex-col min-w-0 w-full flex-1 pt-4">
 
@@ -61,7 +68,7 @@ function PureMessages({
       {messages.length > 0 && (
       <div
         ref={messagesContainerRef}
-        className="flex flex-col gap-6 overflow-y-scroll flex-1 !bg-transparent max-h-[50vh] mt-2"
+        className="flex flex-col gap-6 overflow-y-scroll flex-1 !bg-transparent max-h-[50vh] mt-2 mr-2"
       >
         {messages.map((message, index) => {
           if (message.role === 'assistant') {
