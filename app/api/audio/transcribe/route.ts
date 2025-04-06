@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import Groq from 'groq-sdk';
+import OpenAI from 'openai';
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
 });
 
 export async function POST(request: Request) {
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     }
 
     // Check file type
-    const allowedTypes = ['audio/m4a', 'audio/webm', 'audio/wav', 'audio/mp3'];
+    const allowedTypes = ['audio/m4a', 'audio/webm', 'audio/wav', 'audio/mp3', 'audio/mpeg', 'audio/mpga'];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
         { error: 'Unsupported audio format' }, 
@@ -39,10 +39,11 @@ export async function POST(request: Request) {
       bufferLength: buffer.length
     });
 
-    const transcription = await groq.audio.transcriptions.create({
+    const transcription = await openai.audio.transcriptions.create({
       file: file,
-      model: "whisper-large-v3",
+      model: "whisper-1",
       response_format: "verbose_json",
+      language: "en"
     });
 
     if (!transcription.text) {

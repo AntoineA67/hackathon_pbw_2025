@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Markdown } from './markdown';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExternalLink } from "lucide-react"
@@ -9,13 +9,55 @@ import Link from "next/link";
 interface AssistantMessageProps {
   message: string;
   setInput: any;
+  status?: 'streaming' | 'complete';
 }
 
-export function AssistantMessage({ message, setInput }: AssistantMessageProps) {
+export function AssistantMessage({ message, setInput, status = 'complete' }: AssistantMessageProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentFilename = useRef<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
 
+  //  useEffect(() => {
+  //   const readMessage = async () => {
+  //     // Only generate TTS if the message is complete
+  //     if (status !== 'complete') return;
+      
+  //     try {
+  //       const response = await fetch('/api/text-to-speech', {
+  //         method: 'POST',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //         },
+  //         body: JSON.stringify({ text: message }),
+  //       });
+
+  //       if (!response.ok) {
+  //         throw new Error('Failed to convert text to speech');
+  //       }
+
+  //       const { url } = await response.json();
+  //       const filename = url.split('/').pop();
+  //       console.log('Generated audio file:', filename);
+  //       currentFilename.current = filename;
+        
+  //       if (audioRef.current) {
+  //         audioRef.current.src = url;
+  //         audioRef.current.play();
+  //       }
+  //     } catch (error) {
+  //       console.error('Error reading message:', error);
+  //     }
+  //   };
+
+  //   readMessage();
+
+  //   return () => {
+  //     if (currentFilename.current) {
+  //       deleteAudioFile(currentFilename.current);
+  //     }
+  //   };
+  // }, [message, status]);
+  
   const deleteAudioFile = async (filename: string) => {
     try {
       const response = await fetch('/api/text-to-speech/delete', {
@@ -193,7 +235,7 @@ export function AssistantMessage({ message, setInput }: AssistantMessageProps) {
 
     // Handle transaction result
     if (data.hash && data.balance) {
-      const explorerLink = `https://testnet.xrpl.org/transactions/${data.hash}/detailed`;
+      const explorerLink = `https://testnet.xrpl.org/transactions/${data.hash}`;
       
       return (
         <div className="p-4 bg-gradient-to-br from-cyan-800/90 to-blue-900/90 text-white rounded-lg w-full shadow-lg shadow-green-500/30">

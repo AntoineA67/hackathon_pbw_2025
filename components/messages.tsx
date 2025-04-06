@@ -80,12 +80,22 @@ function PureMessages({
             return (
               <div key={message.id} className="space-y-4">
                 {textParts.map((part, partIndex) => (
-                  <AssistantMessage setInput={setInput} key={`${message.id}-${partIndex}`} message={part.text} />
+                  <AssistantMessage 
+                    setInput={setInput} 
+                    key={`${message.id}-${partIndex}`} 
+                    message={part.text} 
+                    status={status === 'streaming' && messages.length - 1 === index ? 'streaming' : 'complete'}
+                  />
                 ))}
                 {toolParts.map((part, partIndex) => {
                   if (part.type === 'tool-invocation' && part.toolInvocation.state === 'result') {
                     return (
-                      <AssistantMessage setInput={setInput} key={`${message.id}-tool-${partIndex}`} message={JSON.stringify(part.toolInvocation.result)} />
+                      <AssistantMessage 
+                        setInput={setInput} 
+                        key={`${message.id}-tool-${partIndex}`} 
+                        message={JSON.stringify(part.toolInvocation.result)} 
+                        status={status === 'streaming' && messages.length - 1 === index ? 'streaming' : 'complete'}
+                      />
                     );
                   }
                   return null;
