@@ -1,3 +1,4 @@
-export { sendXRP } from './send-xrp';
+export { addContact } from './add-contact';
+export { getContacts } from './get-contacts';
 export { sendCheck } from './send-checks';
-export { addContact } from './add-contact'; 
+export { sendXRP } from './send-xrp'; 

@@ -11,7 +11,6 @@ export function AssistantMessage({ message }: AssistantMessageProps) {
   const currentFilename = useRef<string | null>(null);
 
   const deleteAudioFile = async (filename: string) => {
-    console.log('Attempting to delete audio file:', filename);
     try {
       const response = await fetch('/api/text-to-speech/delete', {
         method: 'POST',
@@ -22,53 +21,61 @@ export function AssistantMessage({ message }: AssistantMessageProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete audio file');
+        console.warn('Failed to delete audio file:', filename);
       }
-
-      const result = await response.json();
-      console.log('Delete response:', result);
     } catch (error) {
-      console.error('Error deleting audio file:', error);
+      console.warn('Error deleting audio file:', error);
     }
   };
 
-  useEffect(() => {
-    const readMessage = async () => {
-      try {
-        const response = await fetch('/api/text-to-speech', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ text: message }),
-        });
+  // useEffect(() => {
+  //   const readMessage = async () => {
+  //     try {
+  //       const response = await fetch('/api/text-to-speech', {
+  //         method: 'POST',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //         },
+  //         body: JSON.stringify({ text: message }),
+  //       });
 
-        if (!response.ok) {
-          throw new Error('Failed to convert text to speech');
-        }
+  //       if (!response.ok) {
+  //         console.warn('Text-to-speech conversion failed, continuing without audio');
+  //         return;
+  //       }
 
-        const { url } = await response.json();
-        const filename = url.split('/').pop();
-        console.log('Generated audio file:', filename);
-        currentFilename.current = filename;
+  //       const { url } = await response.json();
+  //       const filename = url.split('/').pop();
+  //       currentFilename.current = filename;
         
-        if (audioRef.current) {
-          audioRef.current.src = url;
-          audioRef.current.play();
-        }
-      } catch (error) {
-        console.error('Error reading message:', error);
-      }
-    };
+  //       if (audioRef.current) {
+  //         audioRef.current.src = url;
+  //         audioRef.current.play().catch(error => {
+  //           console.warn('Failed to play audio:', error);
+  //         });
+  //       }
+  //     } catch (error) {
+  //       console.warn('Error in text-to-speech process:', error);
+  //     }
+  //   };
 
-    readMessage();
+    // readMessage();
 
+<<<<<<< HEAD
     return () => {
       if (currentFilename.current) {
         deleteAudioFile(currentFilename.current);
       }
     };
   }, [message]);
+=======
+  //   return () => {
+  //     if (currentFilename.current) {
+  //       deleteAudioFile(currentFilename.current);
+  //     }
+  //   };
+  // }, [message]);
+>>>>>>> 3742f98995300e827f4b57bd9b52daf813d64f4b
 
   return (
     <div 
@@ -80,7 +87,6 @@ export function AssistantMessage({ message }: AssistantMessageProps) {
         ref={audioRef} 
         className="hidden"
         onEnded={() => {
-          // Delete the audio file after it's finished playing
           if (currentFilename.current) {
             deleteAudioFile(currentFilename.current);
           }
