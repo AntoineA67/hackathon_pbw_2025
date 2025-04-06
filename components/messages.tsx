@@ -7,6 +7,7 @@ import { type Vote } from '@/lib/db/schema';
 import equal from 'fast-deep-equal';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import { AssistantMessage } from './AssistantMessage';
+import { LoaderIcon } from './icons';
 
 interface MessagesProps {
   chatId: string;
@@ -106,6 +107,14 @@ function PureMessages({
         {status === 'submitted' &&
         messages.length > 0 &&
         messages[messages.length - 1].role === 'user' && <ThinkingMessage />}
+
+        {status === 'streaming' && (
+          <div className="flex items-center justify-center py-4">
+            <div className="animate-spin text-cyan-500">
+              <LoaderIcon />
+            </div>
+          </div>
+        )}
 
         <div
         ref={messagesEndRef}
