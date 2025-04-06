@@ -22,7 +22,7 @@ export const sendCrossCurrency = tool({
           iou_amount,
           destination,
           iou_currency: "524C555344000000000000000000000000000000",
-          iou_issuer: "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          iou_issuer: "rQhWct2fv4Vc4KRjRgMrxa8xPN9Zx9iLKV",
           seed: process.env.SENDER_SECRET,
         }
 
