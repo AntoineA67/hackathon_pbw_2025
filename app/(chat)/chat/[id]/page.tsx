@@ -38,7 +38,6 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
       id: message.id,
       parts: message.parts as UIMessage['parts'],
       role: message.role as UIMessage['role'],
-      // Note: content will soon be deprecated in @ai-sdk/react
       content: '',
       createdAt: message.createdAt,
       experimental_attachments:
@@ -49,29 +48,27 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   const cookieStore = await cookies();
   const chatModelFromCookie = cookieStore.get('chat-model');
 
+  const messages = convertToUIMessages(messagesFromDb);
+
   if (!chatModelFromCookie) {
     return (
-      <>
-        <Chat
-          id={chat.id}
-          initialMessages={convertToUIMessages(messagesFromDb)}
-          selectedChatModel={DEFAULT_CHAT_MODEL}
-          selectedVisibilityType={chat.visibility}
-          isReadonly={session?.user?.id !== chat.userId}
-        />
-      </>
+      <Chat
+        id={chat.id}
+        initialMessages={messages}
+        selectedChatModel={DEFAULT_CHAT_MODEL}
+        selectedVisibilityType={chat.visibility}
+        isReadonly={session?.user?.id !== chat.userId}
+      />
     );
   }
 
   return (
-    <>
-      <Chat
-        id={chat.id}
-        initialMessages={convertToUIMessages(messagesFromDb)}
-        selectedChatModel={chatModelFromCookie.value}
-        selectedVisibilityType={chat.visibility}
-        isReadonly={session?.user?.id !== chat.userId}
-      />
-    </>
+    <Chat
+      id={chat.id}
+      initialMessages={messages}
+      selectedChatModel={chatModelFromCookie.value}
+      selectedVisibilityType={chat.visibility}
+      isReadonly={session?.user?.id !== chat.userId}
+    />
   );
 }

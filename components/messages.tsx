@@ -6,6 +6,7 @@ import { memo } from 'react';
 import { message, type Vote } from '@/lib/db/schema';
 import equal from 'fast-deep-equal';
 import type { UseChatHelpers } from '@ai-sdk/react';
+import { AssistantMessage } from './AssistantMessage';
 
 interface MessagesProps {
   chatId: string;
@@ -62,22 +63,32 @@ function PureMessages({
         ref={messagesContainerRef}
         className="flex flex-col gap-6 overflow-y-scroll flex-1 !bg-transparent max-h-[450px] mt-2"
       >
-        {messages.map((message, index) => (
-        <PreviewMessage
-          key={message.id}
-          chatId={chatId}
-          message={message}
-          isLoading={status === 'streaming' && messages.length - 1 === index}
-          vote={
-          votes
-        ? votes.find((vote) => vote.messageId === message.id)
-        : undefined
+        {messages.map((message, index) => {
+          if (message.role === 'assistant') {
+            const textPart = message.parts.find(part => part.type === 'text');
+            if (textPart && 'text' in textPart) {
+              return (
+                <AssistantMessage key={message.id} message={textPart.text} />
+              );
+            }
           }
-          setMessages={setMessages}
-          reload={reload}
-          isReadonly={isReadonly}
-        />
-        ))}
+          return (
+            <PreviewMessage
+              key={message.id}
+              chatId={chatId}
+              message={message}
+              isLoading={status === 'streaming' && messages.length - 1 === index}
+              vote={
+              votes
+            ? votes.find((vote) => vote.messageId === message.id)
+            : undefined
+              }
+              setMessages={setMessages}
+              reload={reload}
+              isReadonly={isReadonly}
+            />
+          );
+        })}
 
         {status === 'submitted' &&
         messages.length > 0 &&

@@ -125,14 +125,8 @@ const PurePreviewMessage = ({
                             message.role === 'user',
                         })}
                       >
-                        {message.role === 'assistant' && 
-                         part.text.includes('"hash"') && 
-                         part.text.includes('"balance"') && 
-                         part.text.includes('XRP') && 
-                         part.text.includes('sending') ? (
-                          <div className="w-full">
-                            <TransactionMessage content={part.text} />
-                          </div>
+                        {message.role === 'assistant' ? (
+                          <TransactionMessage content={part.text} />
                         ) : (
                           <Markdown>{part.text}</Markdown>
                         )}
