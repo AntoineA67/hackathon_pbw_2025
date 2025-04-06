@@ -5,13 +5,6 @@ import { useState, useEffect, useRef } from "react"
 import { SiXrp } from "react-icons/si"
 import { FaMicrophone } from "react-icons/fa"
 
-interface AIBallProps {
-  size?: number
-  idleColor?: string
-  activeColor?: string
-  onToggle?: (isActive: boolean) => void
-}
-
 function AIBall({ size, onToggle, isActive, setIsActive, append, setInput }: any) {
   const [currentSize, setCurrentSize] = useState(size)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -25,8 +18,8 @@ function AIBall({ size, onToggle, isActive, setIsActive, append, setInput }: any
   const [rotation, setRotation] = useState(0)
   const [scale, setScale] = useState(1)
 
-  const SILENCE_THRESHOLD = -50; // dB
-  const SILENCE_DURATION = 1000; // ms
+  const SILENCE_THRESHOLD = -50;
+  const SILENCE_DURATION = 1000;
 
   const startRecording = async () => {
     try {
@@ -35,7 +28,6 @@ function AIBall({ size, onToggle, isActive, setIsActive, append, setInput }: any
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
-      // Set up audio analysis for silence detection
       audioContextRef.current = new AudioContext();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       const analyser = audioContextRef.current.createAnalyser();
@@ -79,6 +71,7 @@ function AIBall({ size, onToggle, isActive, setIsActive, append, setInput }: any
 
       mediaRecorder.onstop = async () => {
         console.log("onstop");
+        setIsActive(false);
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/m4a' });
         const formData = new FormData();
         formData.append('file', audioBlob, 'audio.m4a');
@@ -93,7 +86,6 @@ function AIBall({ size, onToggle, isActive, setIsActive, append, setInput }: any
             const { text } = await response.json();
             if (text) {
               console.log('transcribed text:', text);
-              // Process the transcribed text as a user message
               await append({
                 role: 'user',
                 content: text
@@ -105,7 +97,6 @@ function AIBall({ size, onToggle, isActive, setIsActive, append, setInput }: any
           console.error('Error processing audio:', error);
         }
 
-        // Clean up audio context
         if (audioContextRef.current) {
           audioContextRef.current.close();
           audioContextRef.current = null;
@@ -178,144 +169,140 @@ function AIBall({ size, onToggle, isActive, setIsActive, append, setInput }: any
     const centerY = rect.height / 2
 
     const radius = Math.min(centerX, centerY) * 0.8
+
+    let hue = isActive ? 200 : 220
     let time = 0
+    let particleTime = 0
+    const particles: Particle[] = []
     
-    class Wave {
-      points: { x: number; y: number }[]
-      color: string
-      amplitude: number
-      frequency: number
+    class Particle {
+      x: number
+      y: number
+      size: number
       speed: number
-      phase: number
-      width: number
-      
-      constructor(color: string, amplitude: number, frequency: number, speed: number, width: number) {
-        this.points = []
-        this.color = color
-        this.amplitude = amplitude
-        this.frequency = frequency
-        this.speed = speed
-        this.phase = Math.random() * Math.PI * 2
-        this.width = width
-        
-        for (let i = 0; i <= 100; i++) {
-          const t = i / 100
-          const angle = t * Math.PI * 2
-          const x = centerX + Math.cos(angle) * radius * 0.7
-          const y = centerY + Math.sin(angle) * radius * 0.7
-          this.points.push({ x, y })
-        }
+      angle: number
+      distance: number
+      hue: number
+      alpha: number
+
+      constructor() {
+        this.angle = Math.random() * Math.PI * 2
+        this.distance = radius * (0.6 + Math.random() * 0.3)
+        this.x = centerX + Math.cos(this.angle) * this.distance
+        this.y = centerY + Math.sin(this.angle) * this.distance
+        this.size = 1 + Math.random() * 3
+        this.speed = 0.01 + Math.random() * 0.02
+        this.hue = hue + Math.random() * 30 - 15
+        this.alpha = 0.1 + Math.random() * 0.4
       }
-      
-      update(time: number) {
-        for (let i = 0; i <= 100; i++) {
-          const t = i / 100
-          const angle = t * Math.PI * 2
-          const offset = Math.sin(angle * this.frequency + time * 10 + this.phase) * this.amplitude
-          const waveRadius = radius * (0.7 + offset * 0.05)
-          
-          this.points[i] = {
-            x: centerX + Math.cos(angle) * waveRadius,
-            y: centerY + Math.sin(angle) * waveRadius
-          }
-        }
+
+      update() {
+        this.angle += this.speed
+        this.x = centerX + Math.cos(this.angle) * this.distance
+        this.y = centerY + Math.sin(this.angle) * this.distance
+
+        // Fade out particles over time
+        this.alpha -= 0.002
+        if (this.alpha <= 0) this.alpha = 0
       }
-      
+
       draw() {
         ctx.beginPath()
-        ctx.moveTo(this.points[0].x, this.points[0].y)
-        
-        for (let i = 1; i <= 100; i++) {
-          const p1 = this.points[i - 1]
-          const p2 = this.points[i % 100]
-          const cpX = (p1.x + p2.x) / 2
-          const cpY = (p1.y + p2.y) / 2
-          ctx.quadraticCurveTo(p1.x, p1.y, cpX, cpY)
-        }
-        
-        ctx.strokeStyle = this.color
-        ctx.lineWidth = this.width
-        ctx.stroke()
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
+        ctx.fillStyle = `hsla(${this.hue}, 80%, 60%, ${this.alpha})`
+        ctx.fill()
+      }
+
+      isDead() {
+        return this.alpha <= 0
       }
     }
-
-    const waves = [
-      new Wave('rgba(219, 166, 255, 0.3)', 1.0, 2, 0.5, 1.5),
-      new Wave('rgba(173, 216, 230, 0.3)', 1.2, 3, 0.3, 1.2),
-      new Wave('rgba(255, 182, 193, 0.3)', 0.8, 4, 0.7, 3.0),
-      new Wave('rgba(144, 238, 144, 0.3)', 1.5, 5, 0.4, 1.8),
-    ]
   
     const animate = () => {
+      // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      time += 0.01
-      const gradient = ctx.createRadialGradient(
-        centerX, 
-        centerY, 
-        0, 
-        centerX, 
-        centerY, 
-        radius
-      )
-      
-      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)')
-      gradient.addColorStop(0.3, 'rgba(219, 166, 255, 0.5)')
-      gradient.addColorStop(0.7, 'rgba(173, 216, 230, 0.5)')
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 0.2)')
 
+      // Update time
+      time += 0.01
+      particleTime += 0.05
+
+      // Shift hue slowly - use different ranges for active/inactive
+      const targetHue = isActive ? 160 : 220 // More teal when active, more blue when inactive
+      hue += (targetHue - hue) * 0.01 // Smooth transition between states
+
+      // Draw main sphere with gradient
+      const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius)
+
+      // Gradient colors based on state and time
+      const baseHue = hue
+      const pulseIntensity = Math.sin(time * 2) * 0.1 + 0.9
+      const pulseRadius = radius * pulseIntensity
+
+      // More gold/amber tones when active, blue when inactive
+      const saturation = isActive ? "90%" : "80%"
+      const lightness = isActive ? "65%" : "60%"
+
+      gradient.addColorStop(0, `hsla(${baseHue}, ${saturation}, ${lightness}, 0.9)`)
+      gradient.addColorStop(0.5, `hsla(${baseHue + 10}, 85%, 55%, 0.8)`)
+      gradient.addColorStop(1, `hsla(${baseHue + 20}, 90%, 45%, 0.2)`)
+
+      // Draw the main sphere
       ctx.beginPath()
-      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+      ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2)
       ctx.fillStyle = gradient
       ctx.fill()
-      
-      ctx.beginPath()
-      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'
-      ctx.lineWidth = 1
-      ctx.stroke()
-      
-      const highlightGradient = ctx.createRadialGradient(
-        centerX - radius * 0.3, 
-        centerY - radius * 0.3, 
-        0, 
-        centerX, 
-        centerY, 
-        radius
+
+      // Add inner glow
+      const innerGlow = ctx.createRadialGradient(
+        centerX - radius * 0.3,
+        centerY - radius * 0.3,
+        0,
+        centerX,
+        centerY,
+        radius,
       )
-      
-      highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)')
-      highlightGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)')
-      highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)')
-      
+
+      // Add a gold/amber highlight for blockchain feel
+      const glowHue = isActive ? baseHue - 30 : baseHue + 10
+      innerGlow.addColorStop(0, `hsla(${glowHue}, 100%, 85%, 0.8)`)
+      innerGlow.addColorStop(0.5, `hsla(${glowHue}, 100%, 70%, 0.1)`)
+      innerGlow.addColorStop(1, `hsla(${glowHue}, 100%, 60%, 0)`)
+
       ctx.beginPath()
-      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-      ctx.fillStyle = highlightGradient
+      ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2)
+      ctx.fillStyle = innerGlow
       ctx.fill()
-      
-      for (const wave of waves) {
-        wave.update(time)
-        wave.draw()
+
+      // Add particles when active
+      if (isActive && Math.random() > 0.7) {
+        particles.push(new Particle())
       }
-      
-      if (isActive) {
-        const pulseSize = radius * (1.05 + Math.sin(time * 3) * 0.02)
-        ctx.beginPath()
-        ctx.arc(centerX, centerY, pulseSize, 0, Math.PI * 2)
-        ctx.strokeStyle = 'rgba(219, 166, 255, 0.3)'
-        ctx.lineWidth = 2
-        ctx.stroke()
-        
-        for (let i = 0; i < 10; i++) {
-          const ringSize = radius * (1.1 + (time * 0.3 + i * 0.33) % 1)
-          const opacity = 0.3 * (1 - ((time * 0.3 + i * 0.33) % 1))
-          
-          ctx.beginPath()
-          ctx.arc(centerX, centerY, ringSize, 0, Math.PI * 2)
-          ctx.strokeStyle = `rgba(219, 166, 255, ${opacity})`
-          ctx.lineWidth = 1
-          ctx.stroke()
+
+      // Update and draw particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update()
+        particles[i].draw()
+
+        // Remove dead particles
+        if (particles[i].isDead()) {
+          particles.splice(i, 1)
         }
       }
+
+      // Draw subtle wave patterns
+      const waveCount = 3
+      for (let i = 0; i < waveCount; i++) {
+        const waveRadius = radius * (0.85 + Math.sin(time + i) * 0.05)
+        const waveWidth = 2
+
+        ctx.beginPath()
+        ctx.arc(centerX, centerY, waveRadius, 0, Math.PI * 2)
+        ctx.strokeStyle = `hsla(${baseHue + i * 15}, 85%, 65%, 0.2)`
+        ctx.lineWidth = waveWidth
+        ctx.stroke()
+      }
+
+      // Continue animation
       animationRef.current = requestAnimationFrame(animate)
     }
     animate()
@@ -357,8 +344,8 @@ export const Greeting = ({ isActive, setIsActive, messagesLength, append, setInp
 }) => {
 
   return (
-    <div className="max-w-3xl mx-auto size-full flex flex-col justify-start items-center">
-      <h1 className={`relative text-2xl font-bold text-white mb-2 ${(isActive || messagesLength) ? "hidden" : ""}`}>
+    <div className="w-full mx-auto size-full flex flex-col justify-start items-center">
+      <h1 className={`relative text-2xl font-bold text-white mb-2 ${(isActive || messagesLength) ? "text-transparent" : ""}`}>
         How may I assist you today?
       </h1>
       <AIBall size={160} isActive={isActive} setIsActive={setIsActive} append={append} setInput={setInput}/>

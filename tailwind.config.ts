@@ -23,6 +23,9 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       colors: {
+        backgroundImage: {
+          "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        },
         background: 'bg-gradient-to-b from-blue-900 to-blue-950',
         text : 'hsl(var(--text))',
         foreground: 'hsl(var(--foreground))',

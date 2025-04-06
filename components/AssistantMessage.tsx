@@ -64,7 +64,6 @@ export function AssistantMessage({ message }: AssistantMessageProps) {
     readMessage();
 
     return () => {
-      // Cleanup function to delete the audio file when component unmounts
       if (currentFilename.current) {
         deleteAudioFile(currentFilename.current);
       }
@@ -72,8 +71,11 @@ export function AssistantMessage({ message }: AssistantMessageProps) {
   }, [message]);
 
   return (
-    <div className="p-4 bg-gray-100 rounded-lg">
-      <p className="text-gray-800">{message}</p>
+    <div 
+      className="p-4 ml-2 bg-gradient-to-br from-cyan-800/90 to-blue-900/90 text-white rounded-lg" 
+      style={{ maxWidth: `${Math.min(600, message.length * 10)}px` }}
+    >
+      <p className="text-cyan-200/70">{message}</p>
       <audio 
         ref={audioRef} 
         className="hidden"

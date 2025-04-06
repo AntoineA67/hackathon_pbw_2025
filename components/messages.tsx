@@ -40,13 +40,13 @@ function PureMessages({
     useScrollToBottom<HTMLDivElement>();
 
   return (
-    <div className="flex flex-col min-w-0 flex-1 pt-4">
+    <div className="flex flex-col min-w-0 w-full flex-1 pt-4">
 
       <div
-        className={`flex transition-all duration-1000 top-0
+        className={`flex transition-all duration-1000
           ${messages.length === 0
           ? 'items-center justify-center flex-1'
-          : 'pb-4 shadow-md shadow-black/20 mt-[-20px] rounded-lg'
+          : 'pb-4 shadow-md shadow-black/20 mt-[-20px]'
         }`}
       >
         <Greeting
@@ -61,7 +61,7 @@ function PureMessages({
       {messages.length > 0 && (
       <div
         ref={messagesContainerRef}
-        className="flex flex-col gap-6 overflow-y-scroll flex-1 !bg-transparent max-h-[450px] mt-2"
+        className="flex flex-col gap-6 overflow-y-scroll flex-1 !bg-transparent max-h-[50vh] mt-2"
       >
         {messages.map((message, index) => {
           if (message.role === 'assistant') {
