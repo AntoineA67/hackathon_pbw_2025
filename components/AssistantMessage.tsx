@@ -1,6 +1,11 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { Markdown } from './markdown';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface AssistantMessageProps {
   message: string;
@@ -28,55 +33,76 @@ export function AssistantMessage({ message }: AssistantMessageProps) {
     }
   };
 
-  // useEffect(() => {
-  //   const readMessage = async () => {
-  //     try {
-  //       const response = await fetch('/api/text-to-speech', {
-  //         method: 'POST',
-  //         headers: {
-  //           'Content-Type': 'application/json',
-  //         },
-  //         body: JSON.stringify({ text: message }),
-  //       });
+  try {
+    // Try to parse the message as JSON to handle tool results
+    const data = JSON.parse(message);
+    
+    // Handle getContacts result
+    if (data.contacts) {
+      return (
+        <div className="p-4 bg-gray-100 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2">Contacts Found:</h3>
+          <ul className="space-y-2">
+            {data.contacts.map((contact: { name: string; walletAddress: string }, index: number) => (
+              <li key={index} className="flex items-center gap-2">
+                <span className="font-medium">{contact.name}</span>
+                <span className="text-gray-600">({contact.walletAddress})</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
 
-  //       if (!response.ok) {
-  //         console.warn('Text-to-speech conversion failed, continuing without audio');
-  //         return;
-  //       }
+    // Handle transaction result
+    if (data.hash && data.balance) {
+      const explorerLink = `https://testnet.xrpl.org/transactions/${data.hash}/detailed`;
+      
+      return (
+        <Card className="w-full max-w-2xl border-green-500/20 bg-green-500/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-green-500">
+              <div className="h-2 w-2 rounded-full bg-green-500" />
+              Transaction Successful
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Transaction ID</span>
+                <span className="font-mono text-sm">{data.hash}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Remaining Balance</span>
+                <span className="font-mono text-sm">{data.balance} XRP</span>
+              </div>
+            </div>
+            <Link
+              href={explorerLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-green-500 hover:underline"
+            >
+              View transaction details
+              <ExternalLink className="h-4 w-4" />
+            </Link>
+          </CardContent>
+        </Card>
+      );
+    }
+  } catch (e) {
+    // If parsing as JSON fails, treat it as regular text content
+    return (
+      <div 
+        className="p-4 ml-2 bg-gradient-to-br from-cyan-800/90 to-blue-900/90 text-white rounded-lg" 
+        style={{ maxWidth: `${Math.min(600, message.length * 10)}px` }}
+      >
+        <Markdown>{message}</Markdown>
+      </div>
+    );
+  }
 
-  //       const { url } = await response.json();
-  //       const filename = url.split('/').pop();
-  //       currentFilename.current = filename;
-        
-  //       if (audioRef.current) {
-  //         audioRef.current.src = url;
-  //         audioRef.current.play().catch(error => {
-  //           console.warn('Failed to play audio:', error);
-  //         });
-  //       }
-  //     } catch (error) {
-  //       console.warn('Error in text-to-speech process:', error);
-  //     }
-  //   };
-
-    // readMessage();
-
-<<<<<<< HEAD
-    return () => {
-      if (currentFilename.current) {
-        deleteAudioFile(currentFilename.current);
-      }
-    };
-  }, [message]);
-=======
-  //   return () => {
-  //     if (currentFilename.current) {
-  //       deleteAudioFile(currentFilename.current);
-  //     }
-  //   };
-  // }, [message]);
->>>>>>> 3742f98995300e827f4b57bd9b52daf813d64f4b
-
+  // If we get here, it means the message wasn't a valid JSON
   return (
     <div 
       className="p-4 ml-2 bg-gradient-to-br from-cyan-800/90 to-blue-900/90 text-white rounded-lg" 
